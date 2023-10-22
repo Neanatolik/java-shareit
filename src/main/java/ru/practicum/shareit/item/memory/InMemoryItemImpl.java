@@ -34,19 +34,20 @@ public class InMemoryItemImpl implements InMemoryItem {
 
     @Override
     public List<ItemDto> getItems(Long userId) {
-        return itemHashMap.values().
-                stream().
-                filter(item -> item.getOwner().equals(userId)).
-                map(ItemMapper::toItemDto).collect(Collectors.toList());
+        return itemHashMap.values()
+                .stream()
+                .filter(item -> item.getOwner().equals(userId))
+                .map(ItemMapper::toItemDto)
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<ItemDto> search(String itemName) {
-        return itemHashMap.values().
-                stream().
-                filter(item -> item.getDescription().toLowerCase().contains(itemName.toLowerCase())).
-                filter(Item::getAvailable).
-                map(ItemMapper::toItemDto).
-                collect(Collectors.toList());
+        return itemHashMap.values()
+                .stream()
+                .filter(item -> item.getDescription().toLowerCase().contains(itemName.toLowerCase()))
+                .filter(Item::getAvailable)
+                .map(ItemMapper::toItemDto)
+                .collect(Collectors.toList());
     }
 }
