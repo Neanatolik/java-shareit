@@ -5,14 +5,14 @@ import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
 
-public interface InMemoryUser {
+public interface UserRepository {
     User add(User user);
 
-    User patch(User user, Long id);
+    User patch(User user, long id);
 
-    User getUserById(Long id);
+    User getUserById(long id);
 
     List<UserDto> getUsers();
 
-    void deleteUser(Long id);
+    void deleteUser(long id);
 }

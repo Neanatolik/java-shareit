@@ -5,15 +5,15 @@ import ru.practicum.shareit.item.model.Item;
 
 import java.util.List;
 
-public interface InMemoryItem {
+public interface ItemRepository {
 
     Item add(Item item);
 
     Item patch(Item item);
 
-    Item getItem(Long id);
+    Item getItem(long id);
 
-    List<ItemDto> getItems(Long userId);
+    List<ItemDto> getItems(long userId);
 
     List<ItemDto> search(String itemName);
 }

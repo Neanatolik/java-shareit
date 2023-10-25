@@ -1,67 +1,67 @@
 package ru.practicum.shareit.item.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
-import ru.practicum.shareit.item.memory.InMemoryItemImpl;
+import ru.practicum.shareit.item.memory.ItemRepositoryImpl;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.memory.InMemoryUserImpl;
+import ru.practicum.shareit.user.memory.UserRepositoryImpl;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 @Service
-@RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
 
-    @Autowired
-    private final InMemoryItemImpl inMemoryItem;
-    @Autowired
-    private final InMemoryUserImpl inMemoryUser;
+    private final ItemRepositoryImpl inMemoryItem;
+    private final UserRepositoryImpl inMemoryUser;
+    private long nextId = 0L;
 
-    private Long nextId = 0L;
+
+    @Autowired
+    public ItemServiceImpl(ItemRepositoryImpl inMemoryItem, UserRepositoryImpl inMemoryUser) {
+        this.inMemoryItem = inMemoryItem;
+        this.inMemoryUser = inMemoryUser;
+    }
 
     @Override
-    public ItemDto post(Item item, Long userId) {
+    public ItemDto post(ItemDto item, long userId) {
         checkItemsUser(userId);
         System.out.println(userId);
         checkItem(item);
-        item.setId(getNextId());
-        item.setOwner(userId);
-        return ItemMapper.toItemDto(inMemoryItem.add(item));
+        return ItemMapper.toItemDto(inMemoryItem.add(ItemMapper.fromItemDto(item, getNextId(), userId)));
     }
 
     @Override
-    public ItemDto patch(Item item, Long itemId, Long userId) {
+    public ItemDto patch(ItemDto item, long itemId, long userId) {
         checkItemsUser(userId);
         checkBelong(itemId, userId);
-        return ItemMapper.toItemDto(inMemoryItem.patch(updateItem(item, inMemoryItem.getItem(itemId))));
+        return ItemMapper.toItemDto(inMemoryItem.patch(updateItem(ItemMapper.fromItemDto(item, itemId, userId), inMemoryItem.getItem(itemId))));
 
     }
 
     @Override
-    public List<ItemDto> getItems(Long userId) {
+    public List<ItemDto> getItems(long userId) {
         checkItemsUser(userId);
         return inMemoryItem.getItems(userId);
     }
 
     @Override
-    public ItemDto getItem(Long id) {
+    public ItemDto getItem(long id) {
         return ItemMapper.toItemDto(inMemoryItem.getItem(id));
     }
 
     @Override
     public List<ItemDto> search(String itemName) {
-        if (itemName.isBlank()) return new ArrayList<>();
+        if (itemName.isBlank()) return Collections.emptyList();
         return inMemoryItem.search(itemName);
     }
 
-    private void checkBelong(Long itemId, Long userId) {
+    private void checkBelong(long itemId, long userId) {
         Long itemFromId = inMemoryItem.getItem(itemId).getOwner();
         if (!Objects.equals(itemFromId, userId)) {
             throw new NotFoundException(String.format("User %d doesn't have item %d", userId, itemId));
@@ -75,13 +75,13 @@ public class ItemServiceImpl implements ItemService {
         return itemOld;
     }
 
-    private void checkItemsUser(Long userId) {
+    private void checkItemsUser(long userId) {
         if (!inMemoryUser.getIds().contains(userId)) {
             throw new NotFoundException(String.format("User %d doesn't exist", userId));
         }
     }
 
-    private void checkItem(Item item) {
+    private void checkItem(ItemDto item) {
         if (Objects.isNull(item.getAvailable())) {
             throw new BadRequest("Item without available");
         } else if (Objects.isNull(item.getName()) || item.getName().isBlank()) {
@@ -91,7 +91,7 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
-    private Long getNextId() {
+    private long getNextId() {
         return ++nextId;
     }
 

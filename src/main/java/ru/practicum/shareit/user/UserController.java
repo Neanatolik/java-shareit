@@ -1,12 +1,13 @@
 package ru.practicum.shareit.user;
 
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.constaints.AdvancedInfo;
+import ru.practicum.shareit.constaints.BasicInfo;
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import javax.validation.Valid;
@@ -17,27 +18,32 @@ import java.util.List;
  */
 @RestController
 @RequestMapping(path = "/users")
-@RequiredArgsConstructor
 public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
-    @Autowired
+
     private final UserService userService;
 
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @PostMapping
-    public UserDto post(@Valid @RequestBody User user) {
+    @Validated(BasicInfo.class)
+    public UserDto post(@RequestBody @Valid UserDto user) {
         log.info("POST /users");
         return userService.post(user);
     }
 
     @PatchMapping("/{id}")
-    public UserDto patch(@Valid @RequestBody User user, @PathVariable Long id) {
+    @Validated(AdvancedInfo.class)
+    public UserDto patch(@RequestBody @Valid UserDto user, @PathVariable long id) {
         log.info("PATCH /users/{}", id);
         return userService.patch(user, id);
     }
 
     @GetMapping("/{id}")
-    public UserDto getUser(@PathVariable Long id) {
+    public UserDto getUser(@PathVariable long id) {
         log.info("GET /users/{}", id);
         return userService.getUser(id);
     }
@@ -49,7 +55,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) {
+    public void deleteUser(@PathVariable long id) {
         log.info("DELETE /users/{}", id);
         userService.deleteUser(id);
     }

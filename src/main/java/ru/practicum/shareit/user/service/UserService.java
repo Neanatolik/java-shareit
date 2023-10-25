@@ -1,18 +1,18 @@
 package ru.practicum.shareit.user.service;
 
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.model.User;
 
+import javax.validation.Valid;
 import java.util.List;
 
 public interface UserService {
-    UserDto post(User user);
+    UserDto post(@Valid UserDto user);
 
-    UserDto patch(User user, Long id);
+    UserDto patch(@Valid UserDto user, long id);
 
-    UserDto getUser(Long id);
+    UserDto getUser(long id);
 
     List<UserDto> getUsers();
 
-    void deleteUser(Long id);
+    void deleteUser(long id);
 }

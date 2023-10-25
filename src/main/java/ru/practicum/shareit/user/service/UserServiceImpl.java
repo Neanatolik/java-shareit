@@ -1,6 +1,5 @@
 package ru.practicum.shareit.user.service;
 
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,37 +7,40 @@ import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.ConflictException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserMapper;
-import ru.practicum.shareit.user.memory.InMemoryUserImpl;
+import ru.practicum.shareit.user.memory.UserRepositoryImpl;
 import ru.practicum.shareit.user.model.User;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Objects;
 
 @Service
-@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    @Autowired
-    private final InMemoryUserImpl inMemoryUser;
-    private Long nextId = 0L;
+    private final UserRepositoryImpl inMemoryUser;
+    private long nextId = 0L;
 
-    @Override
-    public UserDto post(User user) {
-        checkEmail(user.getEmail());
-        checkUser(user);
-        user.setId(getNextId());
-        return UserMapper.toUserDto(inMemoryUser.add(user));
+    @Autowired
+    public UserServiceImpl(UserRepositoryImpl inMemoryUser) {
+        this.inMemoryUser = inMemoryUser;
     }
 
     @Override
-    public UserDto patch(User user, Long id) {
+    public UserDto post(@Valid UserDto user) {
+        checkEmail(user.getEmail());
+        checkUser(user);
+        return UserMapper.toUserDto(inMemoryUser.add(UserMapper.fromUserDto(user, getNextId())));
+    }
+
+    @Override
+    public UserDto patch(@Valid UserDto user, long id) {
         User oldUser = inMemoryUser.getUserById(id);
         if (Objects.nonNull(user.getEmail()) && !user.getEmail().equals(oldUser.getEmail()))
             checkEmail(user.getEmail());
-        return UserMapper.toUserDto(inMemoryUser.patch(updateUser(user, inMemoryUser.getUserById(id)), id));
+        return UserMapper.toUserDto(inMemoryUser.patch(updateUser(UserMapper.fromUserDto(user, id), inMemoryUser.getUserById(id)), id));
     }
 
     @Override
-    public UserDto getUser(Long id) {
+    public UserDto getUser(long id) {
         return UserMapper.toUserDto(inMemoryUser.getUserById(id));
     }
 
@@ -48,7 +50,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void deleteUser(Long id) {
+    public void deleteUser(long id) {
         inMemoryUser.deleteUser(id);
     }
 
@@ -58,7 +60,7 @@ public class UserServiceImpl implements UserService {
         return userOld;
     }
 
-    private void checkUser(User user) {
+    private void checkUser(@Valid UserDto user) {
         if (Objects.isNull(user.getEmail()) || user.getEmail().isBlank()) {
             throw new BadRequest("User without email");
         }
@@ -74,7 +76,7 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private Long getNextId() {
+    private long getNextId() {
         return ++nextId;
     }
 

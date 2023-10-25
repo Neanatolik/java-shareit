@@ -1,7 +1,7 @@
 package ru.practicum.shareit.item.memory;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
@@ -10,9 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
+@Repository
 @RequiredArgsConstructor
-public class InMemoryItemImpl implements InMemoryItem {
+public class ItemRepositoryImpl implements ItemRepository {
     private final HashMap<Long, Item> itemHashMap;
 
     @Override
@@ -28,12 +28,12 @@ public class InMemoryItemImpl implements InMemoryItem {
     }
 
     @Override
-    public Item getItem(Long id) {
+    public Item getItem(long id) {
         return itemHashMap.get(id);
     }
 
     @Override
-    public List<ItemDto> getItems(Long userId) {
+    public List<ItemDto> getItems(long userId) {
         return itemHashMap.values()
                 .stream()
                 .filter(item -> item.getOwner().equals(userId))
