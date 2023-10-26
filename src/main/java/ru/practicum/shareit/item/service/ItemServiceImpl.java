@@ -31,7 +31,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto post(ItemDto item, long userId) {
         checkItemsUser(userId);
-        System.out.println(userId);
         checkItem(item);
         return ItemMapper.toItemDto(inMemoryItem.add(ItemMapper.fromItemDto(item, getNextId(), userId)));
     }

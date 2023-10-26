@@ -55,9 +55,9 @@ public class UserServiceImpl implements UserService {
     }
 
     private User updateUser(User userNew, User userOld) {
-        if (Objects.nonNull(userNew.getEmail())) userOld.setEmail(userNew.getEmail());
-        if (Objects.nonNull(userNew.getName())) userOld.setName(userNew.getName());
-        return userOld;
+        if (Objects.isNull(userNew.getEmail())) userNew.setEmail(userOld.getEmail());
+        if (Objects.isNull(userNew.getName())) userNew.setName(userOld.getName());
+        return userNew;
     }
 
     private void checkUser(@Valid UserDto user) {
@@ -70,8 +70,6 @@ public class UserServiceImpl implements UserService {
         if (!EmailValidator.getInstance().isValid(email)) {
             throw new BadRequest("Wrong email");
         } else if (inMemoryUser.getEmails().contains(email)) {
-            System.out.println(inMemoryUser.getEmails().contains(email));
-            System.out.println(email);
             throw new ConflictException("User with this email already exists");
         }
     }
