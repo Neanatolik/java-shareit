@@ -54,11 +54,11 @@ public class ItemServiceImpl implements ItemService {
     private List<CommentDto> getComments(long itemId) {
         List<Comment> comments = Collections.emptyList();
         System.out.println(itemId);
-        if(commentRepository.getItemIds().contains(itemId)) {
+        if (commentRepository.getItemIds().contains(itemId)) {
             comments = commentRepository.getCommentsByItemId(itemId);
         }
         List<CommentDto> commentsDto = new ArrayList<>();
-        for(Comment comment: comments) {
+        for (Comment comment : comments) {
             commentsDto.add(CommentMapper.toCommentDto(comment, userRepository.getReferenceById(comment.getAuthor()).getName()));
         }
         return commentsDto;

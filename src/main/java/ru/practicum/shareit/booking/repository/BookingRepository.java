@@ -98,7 +98,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "i.owner_id = ?2 and\n" +
             "b.status = 'APPROVED'\n" +
             "order by b.start_date desc", nativeQuery = true)
-    List<Booking> getBookingsByItemIdDesc(long ItemId, long userId);
+    List<Booking> getBookingsByItemIdDesc(long itemId, long userId);
 
     @Query(value = "select *\n" +
             "from bookings b\n" +
