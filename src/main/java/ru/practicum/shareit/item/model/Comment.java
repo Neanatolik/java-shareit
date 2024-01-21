@@ -5,20 +5,21 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "items", schema = "public")
+@Table(name = "comments", schema = "public")
 @AllArgsConstructor
 @NoArgsConstructor
-public class Item {
+public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
-    private String description;
-    @Column(name = "is_available")
-    private Boolean available;
-    @Column(name = "owner_id")
-    private Long owner;
+    private String text;
+    @Column(name = "item_id")
+    private Long item;
+    @Column(name = "author_id")
+    private Long author;
+    private LocalDateTime created;
 }

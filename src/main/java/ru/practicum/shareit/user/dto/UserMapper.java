@@ -9,8 +9,8 @@ public class UserMapper {
         return new UserDto(user.getId(), user.getName(), user.getEmail());
     }
 
-    public User fromUserDto(UserDto userDto, long id) {
-        return new User(id, userDto.getName(), userDto.getEmail());
+    public User fromUserDto(UserDto bookingDto, long id) {
+        return new User(id, bookingDto.getName(), bookingDto.getEmail());
     }
 
 }
