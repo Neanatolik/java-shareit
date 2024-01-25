@@ -3,6 +3,7 @@ package ru.practicum.shareit.user.service;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.user.dto.UserDto;
@@ -13,10 +14,10 @@ import ru.practicum.shareit.user.repository.UserRepository;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private long nextId = 0L;
@@ -27,6 +28,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserDto post(@Valid UserDto user) {
         checkEmail(user.getEmail());
         checkUser(user);
@@ -35,6 +37,7 @@ public class UserServiceImpl implements UserService {
 
     //
     @Override
+    @Transactional
     public UserDto patch(@Valid UserDto user, long id) {
         if (!Objects.isNull(user.getEmail())) checkEmail(user.getEmail());
         User newUser = updateUser(UserMapper.fromUserDto(user, id), getUserById(id));
@@ -53,16 +56,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(long id) {
         userRepository.deleteById(id);
     }
 
     public User getUserById(long id) {
-        Optional<User> optUser = userRepository.findById(id);
-        if (optUser.isEmpty()) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
-        return optUser.get();
+        return userRepository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с таким id не существует"));
     }
 
     private User updateUser(User userNew, User userOld) {

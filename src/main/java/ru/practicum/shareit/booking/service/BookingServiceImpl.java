@@ -1,7 +1,9 @@
 package ru.practicum.shareit.booking.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoSend;
 import ru.practicum.shareit.booking.dto.BookingMapper;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@Transactional(readOnly = true)
 public class BookingServiceImpl implements BookingService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
@@ -36,6 +39,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingDtoSend post(BookingDto bookingDto, long userId) {
         checkUser(userId);
         checkItemId(bookingDto.getItemId());
@@ -51,6 +55,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingDtoSend patch(long bookingId, boolean approved, long userId) {
         checkBookingId(bookingId);
         checkStatus(bookingId);
@@ -82,11 +87,8 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public List<BookingDtoSend> get(long userId, String state) {
         checkUser(userId);
-        System.out.println();
         checkState(state);
-        System.out.println("bookings: " + bookingRepository.getBookingsItemAll(userId));
         List<Booking> listBooking = getListOfBookingByStateAndUser(userId, state);
-        System.out.println("listBooking: " + listBooking);
         List<BookingDtoSend> listBookingDtoSend = new LinkedList<>();
         for (Booking b : listBooking) {
             listBookingDtoSend.add(BookingMapper.toBookingDtoSend(b,
@@ -187,7 +189,6 @@ public class BookingServiceImpl implements BookingService {
 
     private void checkState(String state) {
         List<String> status = Stream.of(Status.values()).map(Status::name).collect(Collectors.toList());
-        System.out.println(state);
         if (!status.contains(state)) {
             throw new BadRequest("Unknown state: UNSUPPORTED_STATUS");
         }
@@ -230,19 +231,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private Item getItemById(Long id) {
-        Optional<Item> optItem = itemRepository.findById(id);
-        if (optItem.isEmpty()) {
-            throw new NotFoundException(String.format("Item %d doesn't exist", id));
-        }
-        return optItem.get();
+        return itemRepository.findById(id).orElseThrow(() -> new NotFoundException(String.format("Item %d doesn't exist", id)));
     }
 
     private Booking getBookingById(Long id) {
-        Optional<Booking> optItem = bookingRepository.findById(id);
-        if (optItem.isEmpty()) {
-            throw new NotFoundException(String.format("Booking %d doesn't exist", id));
-        }
-        return optItem.get();
+        return bookingRepository.findById(id).orElseThrow(() -> new NotFoundException(String.format("Booking %d doesn't exist", id)));
     }
 
     private void checkUser(long userId) {
@@ -252,9 +245,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void checkItemId(Long itemId) {
-        if (itemRepository.findById(itemId).isEmpty()) {
-            throw new NotFoundException("Такого item не существует");
-        }
+        itemRepository.findById(itemId).orElseThrow(() -> new NotFoundException("Такого item не существует"));
     }
 
     private void checkIsUserOwnerItem(long userId, Long itemId) {

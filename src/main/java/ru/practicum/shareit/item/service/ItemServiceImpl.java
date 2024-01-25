@@ -2,6 +2,7 @@ package ru.practicum.shareit.item.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDtoForItem;
 import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
@@ -19,9 +20,13 @@ import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 @Service
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
@@ -42,6 +47,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public ItemDto post(ItemDto itemDto, long userId) {
         checkItem(itemDto);
         checkItemsUser(userId);
@@ -51,20 +57,8 @@ public class ItemServiceImpl implements ItemService {
                 getComments(nextId));
     }
 
-    private List<CommentDto> getComments(long itemId) {
-        List<Comment> comments = Collections.emptyList();
-        System.out.println(itemId);
-        if (commentRepository.getItemIds().contains(itemId)) {
-            comments = commentRepository.getCommentsByItemId(itemId);
-        }
-        List<CommentDto> commentsDto = new ArrayList<>();
-        for (Comment comment : comments) {
-            commentsDto.add(CommentMapper.toCommentDto(comment, userRepository.getReferenceById(comment.getAuthor()).getName()));
-        }
-        return commentsDto;
-    }
-
     @Override
+    @Transactional
     public ItemDto patch(ItemDto itemDto, long itemId, long userId) {
         checkItemsUser(userId);
         checkBelong(itemId, userId);
@@ -112,6 +106,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public CommentDto postComment(long userId, Long itemId, Comment comment) {
         checkItemsUser(userId);
         checkAvailabilityOfBookingForUser(userId, itemId);
@@ -122,6 +117,18 @@ public class ItemServiceImpl implements ItemService {
         String authorName = userRepository.getReferenceById(userId).getName();
         comment.setCreated(LocalDateTime.now());
         return CommentMapper.toCommentDto(commentRepository.save(comment), authorName);
+    }
+
+    private List<CommentDto> getComments(long itemId) {
+        List<Comment> comments = Collections.emptyList();
+        if (commentRepository.getItemIds().contains(itemId)) {
+            comments = commentRepository.getCommentsByItemId(itemId);
+        }
+        List<CommentDto> commentsDto = new ArrayList<>();
+        for (Comment comment : comments) {
+            commentsDto.add(CommentMapper.toCommentDto(comment, userRepository.getReferenceById(comment.getAuthor()).getName()));
+        }
+        return commentsDto;
     }
 
     private void checkDateOfBookingForComment(long userId, Long itemId) {
@@ -146,11 +153,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private Item getItemById(Long id) {
-        Optional<Item> optItem = itemRepository.findById(id);
-        if (optItem.isEmpty()) {
-            throw new NotFoundException(String.format("Item %d doesn't exist", id));
-        }
-        return optItem.get();
+        return itemRepository.findById(id).orElseThrow(() -> new NotFoundException(String.format("Item %d doesn't exist", id)));
     }
 
     private void checkBelong(long itemId, long userId) {
@@ -193,7 +196,6 @@ public class ItemServiceImpl implements ItemService {
             return null;
         }
         List<Booking> bookings = bookingRepository.getBookingsByItemIdDesc(item.getId(), userId);
-        System.out.println(bookings);
         if (bookings.isEmpty()) {
             return null;
         }
