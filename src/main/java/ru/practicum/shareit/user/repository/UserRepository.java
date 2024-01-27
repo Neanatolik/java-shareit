@@ -4,10 +4,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import ru.practicum.shareit.user.model.User;
 
-import java.util.List;
-
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    @Query(value = "select id from users", nativeQuery = true)
-    List<Long> getIds();
+    @Query(value = "SELECT EXISTS(select u.id\n" +
+            "from users u\n" +
+            "where u.id = ?1)", nativeQuery = true)
+    boolean existUserId(long id);
 }

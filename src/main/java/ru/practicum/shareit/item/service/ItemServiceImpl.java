@@ -17,6 +17,7 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -48,61 +50,61 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public ItemDto post(ItemDto itemDto, long userId) {
+    public ItemDto saveItem(ItemDto itemDto, long userId) {
         checkItem(itemDto);
         checkItemsUser(userId);
-        return ItemMapper.toItemDto(itemRepository.save(ItemMapper.fromItemDto(itemDto, getNextId(), userId)),
-                getLastBooking(ItemMapper.fromItemDto(itemDto, nextId, userId), userId),
-                getNextBooking(ItemMapper.fromItemDto(itemDto, nextId, userId), userId),
-                getComments(nextId));
+        User user = userRepository.getReferenceById(userId);
+        return ItemMapper.toItemDto(itemRepository.save(ItemMapper.fromItemDto(itemDto, getNextId(), user)),
+                getLastBooking(ItemMapper.fromItemDto(itemDto, nextId, user), userId),
+                getNextBooking(ItemMapper.fromItemDto(itemDto, nextId, user), userId),
+                getCommentsByItemId(nextId));
     }
 
     @Override
     @Transactional
-    public ItemDto patch(ItemDto itemDto, long itemId, long userId) {
+    public ItemDto changeItem(ItemDto itemDto, long itemId, long userId) {
         checkItemsUser(userId);
         checkBelong(itemId, userId);
-        Item item1 = itemRepository.save(updateItem(ItemMapper.fromItemDto(itemDto, itemId, userId), itemRepository.getReferenceById(itemId)));
-        return ItemMapper.toItemDto(item1,
-                getLastBooking(item1, userId),
-                getNextBooking(item1, userId),
-                getComments(itemId));
+        User user = userRepository.getReferenceById(userId);
+        Item item = itemRepository.save(updateItem(ItemMapper.fromItemDto(itemDto, itemId, user), itemRepository.getReferenceById(itemId)));
+        return ItemMapper.toItemDto(item,
+                getLastBooking(item, userId),
+                getNextBooking(item, userId),
+                getCommentsByItemId(itemId));
 
     }
 
     @Override
-    public List<ItemDto> getItems(long userId) {
+    public List<ItemDto> getItemsByUserId(long userId) {
         checkItemsUser(userId);
         List<ItemDto> itemsDto = new ArrayList<>();
         for (Item item : itemRepository.getItems(userId)) {
             itemsDto.add(ItemMapper.toItemDto(item,
                     getLastBooking(item, userId),
                     getNextBooking(item, userId),
-                    getComments(item.getId())));
+                    getCommentsByItemId(item.getId())));
         }
         return itemsDto;
     }
 
     @Override
-    public ItemDto getItem(long itemId, long userId) {
+    public ItemDto getItemByItemAndUserId(long itemId, long userId) {
         Item item = getItemById(itemId);
         return ItemMapper.toItemDto(item,
                 getLastBooking(item, userId),
                 getNextBooking(item, userId),
-                getComments(itemId));
+                getCommentsByItemId(itemId));
     }
 
     @Override
-    public List<ItemDto> search(String itemName, long userId) {
+    public List<ItemDto> searchByItemName(String itemName, long userId) {
         if (itemName.isBlank()) return Collections.emptyList();
-        List<ItemDto> itemsDto = new ArrayList<>();
-        for (Item item : itemRepository.search(itemName)) {
-            itemsDto.add(ItemMapper.toItemDto(item,
-                    getLastBooking(item, userId),
-                    getNextBooking(item, userId),
-                    getComments(item.getId())));
-        }
-        return itemsDto;
+        return itemRepository.search(itemName).stream()
+                .map(item -> ItemMapper.toItemDto(item,
+                        getLastBooking(item, userId),
+                        getNextBooking(item, userId),
+                        getCommentsByItemId(item.getId())))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -119,7 +121,7 @@ public class ItemServiceImpl implements ItemService {
         return CommentMapper.toCommentDto(commentRepository.save(comment), authorName);
     }
 
-    private List<CommentDto> getComments(long itemId) {
+    private List<CommentDto> getCommentsByItemId(long itemId) {
         List<Comment> comments = Collections.emptyList();
         if (commentRepository.getItemIds().contains(itemId)) {
             comments = commentRepository.getCommentsByItemId(itemId);
@@ -157,7 +159,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private void checkBelong(long itemId, long userId) {
-        Long itemFromId = itemRepository.getReferenceById(itemId).getOwner();
+        Long itemFromId = itemRepository.getReferenceById(itemId).getOwner().getId();
         if (!Objects.equals(itemFromId, userId)) {
             throw new NotFoundException(String.format("User %d doesn't have item %d", userId, itemId));
         }
@@ -196,12 +198,14 @@ public class ItemServiceImpl implements ItemService {
             return null;
         }
         List<Booking> bookings = bookingRepository.getBookingsByItemIdDesc(item.getId(), userId);
+
         if (bookings.isEmpty()) {
             return null;
         }
         if (bookings.get(0).getEnd().isBefore(LocalDateTime.now())) {
             return null;
         }
+
         for (Booking booking : bookings) {
             if (booking.getStart().isAfter(LocalDateTime.now())) {
                 bookingDtoForItem = BookingMapper.toBookingDtoForItem(booking);
@@ -212,7 +216,7 @@ public class ItemServiceImpl implements ItemService {
 
 
     private void checkItemsUser(long userId) {
-        if (!userRepository.getIds().contains(userId)) {
+        if (!userRepository.existUserId(userId)) {
             throw new NotFoundException(String.format("User %d doesn't exist", userId));
         }
     }

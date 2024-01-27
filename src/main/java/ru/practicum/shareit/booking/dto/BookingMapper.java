@@ -2,8 +2,10 @@ package ru.practicum.shareit.booking.dto;
 
 import lombok.experimental.UtilityClass;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.item.dto.ItemDtoForBooking;
-import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.item.dto.ItemMapper;
+import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.dto.UserMapper;
+import ru.practicum.shareit.user.model.User;
 
 @UtilityClass
 public class BookingMapper {
@@ -12,34 +14,32 @@ public class BookingMapper {
                 booking.getId(),
                 booking.getStart(),
                 booking.getEnd(),
-                booking.getItemId(),
-                booking.getBooker(),
-                booking.getStatus());
-    }
-
-    public Booking fromBookingDto(BookingDto bookingDto, long id) {
-        return new Booking(id,
-                bookingDto.getStart(),
-                bookingDto.getEnd(),
-                bookingDto.getItemId(),
-                bookingDto.getBooker(),
-                bookingDto.getStatus());
-    }
-
-    public BookingDtoSend toBookingDtoSend(Booking booking, ItemDtoForBooking itemDtoForBooking, UserDto userDto) {
-        return new BookingDtoSend(
-                booking.getId(),
-                booking.getStart(),
-                booking.getEnd(),
-                new ItemDtoForBooking(itemDtoForBooking.getId(), itemDtoForBooking.getName()),
-                userDto,
+                booking.getItem().getId(),
+                booking.getBooker().getId(),
                 booking.getStatus());
     }
 
     public BookingDtoForItem toBookingDtoForItem(Booking booking) {
         return new BookingDtoForItem(
                 booking.getId(),
-                booking.getBooker());
+                booking.getBooker().getId());
     }
 
+    public Booking fromBookingDto(BookingDto bookingDto, User user, Item item, Long id) {
+        return new Booking(id,
+                bookingDto.getStart(),
+                bookingDto.getEnd(),
+                item,
+                user,
+                bookingDto.getStatus());
+    }
+
+    public static BookingDtoSend toBookingDtoSend(Booking booking) {
+        return new BookingDtoSend(booking.getId(),
+                booking.getStart(),
+                booking.getEnd(),
+                ItemMapper.toItemDtoForBooking(booking.getItem()),
+                UserMapper.toUserDto(booking.getBooker()),
+                booking.getStatus());
+    }
 }

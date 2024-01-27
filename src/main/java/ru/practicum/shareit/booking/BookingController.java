@@ -24,35 +24,35 @@ public class BookingController {
     }
 
     @PostMapping
-    public BookingDtoSend post(@RequestBody @Valid BookingDto bookingDto, @RequestHeader(user) long userId) {
+    public BookingDtoSend saveBooking(@RequestBody @Valid BookingDto bookingDto, @RequestHeader(user) long userId) {
         log.info("POST (user: {}) /bookings", userId);
-        return bookingService.post(bookingDto, userId);
+        return bookingService.saveBooking(bookingDto, userId);
     }
 
     @GetMapping
-    public List<BookingDtoSend> get(@RequestHeader(user) long userId,
-                                    @RequestParam(name = "state", defaultValue = "ALL") String state) {
+    public List<BookingDtoSend> getBookingWithState(@RequestHeader(user) long userId,
+                                                    @RequestParam(name = "state", defaultValue = "ALL") String state) {
         log.info("GET (user: {}) /bookings?state={}", userId, state);
-        return bookingService.get(userId, state);
+        return bookingService.getBookingWithState(userId, state);
     }
 
     @PatchMapping("/{bookingId}")
-    public BookingDtoSend patch(@PathVariable Long bookingId,
-                                @RequestParam("approved") boolean approved,
-                                @RequestHeader(user) long userId) {
+    public BookingDtoSend changeBooking(@PathVariable Long bookingId,
+                                        @RequestParam("approved") boolean approved,
+                                        @RequestHeader(user) long userId) {
         log.info("PATCH (user: {}) /bookings/{}?approved={}", userId, bookingId, approved);
-        return bookingService.patch(bookingId, approved, userId);
+        return bookingService.changeBooking(bookingId, approved, userId);
     }
 
     @GetMapping("/{bookingId}")
-    public BookingDtoSend get(@PathVariable long bookingId, @RequestHeader(user) long userId) {
+    public BookingDtoSend getBookingWithoutState(@PathVariable long bookingId, @RequestHeader(user) long userId) {
         log.info("GET (user: {}) /bookings/{}", userId, bookingId);
-        return bookingService.get(bookingId, userId);
+        return bookingService.getBookingWithoutState(bookingId, userId);
     }
 
     @GetMapping("/owner")
-    public List<BookingDtoSend> getOwner(@RequestHeader(user) long userId,
-                                         @RequestParam(name = "state", defaultValue = "ALL") String state) {
+    public List<BookingDtoSend> getOwnersItem(@RequestHeader(user) long userId,
+                                              @RequestParam(name = "state", defaultValue = "ALL") String state) {
         log.info("GET (user: {}) /owner?state={}", userId, state);
         return bookingService.getOwnersItem(userId, state);
     }

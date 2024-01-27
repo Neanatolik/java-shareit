@@ -29,34 +29,34 @@ public class ItemController {
 
     @PostMapping
     @Validated(BasicInfo.class)
-    public ItemDto post(@RequestBody @Valid ItemDto item, @RequestHeader(user) long userId) {
+    public ItemDto saveItem(@RequestBody @Valid ItemDto item, @RequestHeader(user) long userId) {
         log.info("POST /items");
-        return itemService.post(item, userId);
+        return itemService.saveItem(item, userId);
     }
 
     @GetMapping
-    public List<ItemDto> get(@RequestHeader(user) long userId) {
+    public List<ItemDto> getItemsByUserId(@RequestHeader(user) long userId) {
         log.info("GET /items");
-        return itemService.getItems(userId);
+        return itemService.getItemsByUserId(userId);
     }
 
     @PatchMapping("/{itemId}")
     @Validated(AdvancedInfo.class)
-    public ItemDto patch(@RequestBody @Valid ItemDto item, @PathVariable long itemId, @RequestHeader(user) long userId) {
+    public ItemDto changeItem(@RequestBody @Valid ItemDto item, @PathVariable long itemId, @RequestHeader(user) long userId) {
         log.info("PATCH /items/{}", itemId);
-        return itemService.patch(item, itemId, userId);
+        return itemService.changeItem(item, itemId, userId);
     }
 
     @GetMapping("/{itemId}")
-    public ItemDto get(@PathVariable Long itemId, @RequestHeader(user) long userId) {
+    public ItemDto getItemByItemAndUserId(@PathVariable Long itemId, @RequestHeader(user) long userId) {
         log.info("GET /items/{}", itemId);
-        return itemService.getItem(itemId, userId);
+        return itemService.getItemByItemAndUserId(itemId, userId);
     }
 
     @GetMapping("/search")
-    public List<ItemDto> search(@RequestParam("text") String itemName, @RequestHeader(user) long userId) {
+    public List<ItemDto> searchByItemName(@RequestParam("text") String itemName, @RequestHeader(user) long userId) {
         log.info("GET /items");
-        return itemService.search(itemName, userId);
+        return itemService.searchByItemName(itemName, userId);
     }
 
     @PostMapping("/{itemId}/comment")

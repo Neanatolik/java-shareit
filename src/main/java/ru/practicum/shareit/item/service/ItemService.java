@@ -7,15 +7,15 @@ import ru.practicum.shareit.item.model.Comment;
 import java.util.List;
 
 public interface ItemService {
-    ItemDto post(ItemDto item, long userId);
+    ItemDto saveItem(ItemDto item, long userId);
 
-    ItemDto patch(ItemDto item, long id, long userId);
+    ItemDto changeItem(ItemDto item, long id, long userId);
 
-    List<ItemDto> getItems(long userId);
+    List<ItemDto> getItemsByUserId(long userId);
 
-    ItemDto getItem(long id, long userId);
+    ItemDto getItemByItemAndUserId(long id, long userId);
 
-    List<ItemDto> search(String itemName, long userId);
+    List<ItemDto> searchByItemName(String itemName, long userId);
 
     CommentDto postComment(long userId, Long itemId, Comment comment);
 }

@@ -48,11 +48,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "order by b.start_date desc", nativeQuery = true)
     List<Booking> getBookingsByStatusAndOwnerId(long userId, String status);
 
-    @Query(value = "select *\n" +
-            "from bookings b\n" +
-            "where b.status = '?1'", nativeQuery = true)
-    List<Booking> getBookingsByStatus(Status status);
-
     @Query(value = "select b.booker_id\n" +
             "from bookings b\n" +
             "where b.id = ?1", nativeQuery = true)

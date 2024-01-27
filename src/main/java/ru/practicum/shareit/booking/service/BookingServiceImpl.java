@@ -1,7 +1,6 @@
 package ru.practicum.shareit.booking.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -12,14 +11,16 @@ import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.enums.Status;
 import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.user.dto.UserMapper;
+import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,23 +41,21 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public BookingDtoSend post(BookingDto bookingDto, long userId) {
+    public BookingDtoSend saveBooking(BookingDto bookingDto, long userId) {
         checkUser(userId);
         checkItemId(bookingDto.getItemId());
         checkIsUserOwnerItem(userId, bookingDto.getItemId());
         checkItemAvailable(bookingDto.getItemId());
         checkDate(bookingDto.getStart(), bookingDto.getEnd());
-        bookingDto.setBooker(userId);
         bookingDto.setStatus(Status.WAITING);
-        return BookingMapper.toBookingDtoSend(
-                bookingRepository.save(BookingMapper.fromBookingDto(bookingDto, getNextId())),
-                ItemMapper.toItemDtoForBooking(itemRepository.getReferenceById(bookingDto.getItemId())),
-                UserMapper.toUserDto(userRepository.getReferenceById(userId)));
+        User user = userRepository.getReferenceById(userId);
+        Item item = itemRepository.getReferenceById(bookingDto.getItemId());
+        return BookingMapper.toBookingDtoSend(bookingRepository.save(BookingMapper.fromBookingDto(bookingDto, user, item, getNextId())));
     }
 
     @Override
     @Transactional
-    public BookingDtoSend patch(long bookingId, boolean approved, long userId) {
+    public BookingDtoSend changeBooking(long bookingId, boolean approved, long userId) {
         checkBookingId(bookingId);
         checkStatus(bookingId);
         checkOwning(bookingId, userId);
@@ -66,34 +65,26 @@ public class BookingServiceImpl implements BookingService {
         } else {
             booking.setStatus(Status.REJECTED);
         }
-        return BookingMapper.toBookingDtoSend(
-                bookingRepository.save(booking),
-                ItemMapper.toItemDtoForBooking(itemRepository.getReferenceById(booking.getItemId())),
-                UserMapper.toUserDto(userRepository.getReferenceById(booking.getBooker())));
+        return BookingMapper.toBookingDtoSend(bookingRepository.save(booking));
     }
 
     @Override
-    public BookingDtoSend get(long bookingId, long userId) {
+    public BookingDtoSend getBookingWithoutState(long bookingId, long userId) {
         checkBookingId(bookingId);
         checkUser(userId);
         checkBookingUser(bookingId, userId);
         Booking booking = getBookingById(bookingId);
-        return BookingMapper.toBookingDtoSend(
-                booking,
-                ItemMapper.toItemDtoForBooking(itemRepository.getReferenceById(booking.getItemId())),
-                UserMapper.toUserDto(userRepository.getReferenceById(booking.getBooker())));
+        return BookingMapper.toBookingDtoSend(booking);
     }
 
     @Override
-    public List<BookingDtoSend> get(long userId, String state) {
+    public List<BookingDtoSend> getBookingWithState(long userId, String state) {
         checkUser(userId);
         checkState(state);
         List<Booking> listBooking = getListOfBookingByStateAndUser(userId, state);
         List<BookingDtoSend> listBookingDtoSend = new LinkedList<>();
         for (Booking b : listBooking) {
-            listBookingDtoSend.add(BookingMapper.toBookingDtoSend(b,
-                    ItemMapper.toItemDtoForBooking(itemRepository.getReferenceById(b.getItemId())),
-                    UserMapper.toUserDto(userRepository.getReferenceById(b.getBooker()))));
+            listBookingDtoSend.add(BookingMapper.toBookingDtoSend(b));
         }
         return listBookingDtoSend;
     }
@@ -105,9 +96,7 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> listBooking = getListOfBookingByStateAndUserForOwner(ownerId, state);
         List<BookingDtoSend> listBookingDtoSend = new LinkedList<>();
         for (Booking b : listBooking) {
-            listBookingDtoSend.add(BookingMapper.toBookingDtoSend(b,
-                    ItemMapper.toItemDtoForBooking(itemRepository.getReferenceById(b.getItemId())),
-                    UserMapper.toUserDto(userRepository.getReferenceById(b.getBooker()))));
+            listBookingDtoSend.add(BookingMapper.toBookingDtoSend(b));
         }
         return listBookingDtoSend;
     }
@@ -216,11 +205,6 @@ public class BookingServiceImpl implements BookingService {
         if (end.isBefore(LocalDateTime.now())) {
             throw new BadRequest("Дата окончания в прошлом!");
         }
-        for (Booking booking : bookingRepository.getBookingsByStatus(Status.APPROVED)) {
-            if (!(end.isBefore(booking.getStart()) || start.isBefore(booking.getEnd()))) {
-                throw new BadRequest("Занято");
-            }
-        }
 
     }
 
@@ -239,7 +223,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void checkUser(long userId) {
-        if (!userRepository.getIds().contains(userId)) {
+        if (!userRepository.existUserId(userId)) {
             throw new NotFoundException(String.format("User %d doesn't exist", userId));
         }
     }
@@ -249,14 +233,12 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void checkIsUserOwnerItem(long userId, Long itemId) {
-        if (itemRepository.getReferenceById(itemId).getOwner() == userId) {
+        if (itemRepository.getReferenceById(itemId).getOwner().getId() == userId) {
             throw new NotFoundException("Пользователь явлется владельцем вещи");
         }
     }
 
-
     private long getNextId() {
         return ++nextId;
     }
-
 }

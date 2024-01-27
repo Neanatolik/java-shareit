@@ -29,16 +29,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserDto post(@Valid UserDto user) {
+    public UserDto saveUser(@Valid UserDto user) {
         checkEmail(user.getEmail());
         checkUser(user);
         return UserMapper.toUserDto(userRepository.save(UserMapper.fromUserDto(user, getNextId())));
     }
 
-    //
     @Override
     @Transactional
-    public UserDto patch(@Valid UserDto user, long id) {
+    public UserDto changeUser(@Valid UserDto user, long id) {
         if (!Objects.isNull(user.getEmail())) checkEmail(user.getEmail());
         User newUser = updateUser(UserMapper.fromUserDto(user, id), getUserById(id));
         userRepository.save(newUser);
