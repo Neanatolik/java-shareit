@@ -35,8 +35,6 @@ public class ItemServiceImpl implements ItemService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final BookingRepository bookingRepository;
-    private long nextId = 0L;
-
 
     @Autowired
     public ItemServiceImpl(ItemRepository itemRepository,
@@ -54,10 +52,11 @@ public class ItemServiceImpl implements ItemService {
         checkItem(itemDto);
         checkItemsUser(userId);
         User user = userRepository.getReferenceById(userId);
-        return ItemMapper.toItemDto(itemRepository.save(ItemMapper.fromItemDto(itemDto, getNextId(), user)),
-                getLastBooking(ItemMapper.fromItemDto(itemDto, nextId, user), userId),
-                getNextBooking(ItemMapper.fromItemDto(itemDto, nextId, user), userId),
-                getCommentsByItemId(nextId));
+        Item item = itemRepository.save(ItemMapper.fromItemDto(itemDto, user));
+        return ItemMapper.toItemDto(item,
+                getLastBooking(ItemMapper.fromItemDto(itemDto, item.getId(), user), userId),
+                getNextBooking(ItemMapper.fromItemDto(itemDto, item.getId(), user), userId),
+                getCommentsByItemId(item.getId()));
     }
 
     @Override
@@ -78,11 +77,17 @@ public class ItemServiceImpl implements ItemService {
     public List<ItemDto> getItemsByUserId(long userId) {
         checkItemsUser(userId);
         List<ItemDto> itemsDto = new ArrayList<>();
-        for (Item item : itemRepository.getItems(userId)) {
+        List<Booking> bookings = bookingRepository.getBookingsByUserId(userId);
+        List<Item> items = itemRepository.getItems(userId);
+        List<Comment> comments = commentRepository.findAll();
+        for (Item item : items) {
+            List<Booking> bookingsByItem = bookings.stream()
+                    .filter(booking -> Objects.equals(booking.getItem().getId(), item.getId()))
+                    .collect(Collectors.toList());
             itemsDto.add(ItemMapper.toItemDto(item,
-                    getLastBooking(item, userId),
-                    getNextBooking(item, userId),
-                    getCommentsByItemId(item.getId())));
+                    getLastBookingWithoutCycle(item, bookingsByItem),
+                    getNextBookingWithoutCycle(item, bookingsByItem),
+                    getCommentsByItemIdWithoutCycle(comments, item.getId())));
         }
         return itemsDto;
     }
@@ -99,12 +104,20 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> searchByItemName(String itemName, long userId) {
         if (itemName.isBlank()) return Collections.emptyList();
-        return itemRepository.search(itemName).stream()
-                .map(item -> ItemMapper.toItemDto(item,
-                        getLastBooking(item, userId),
-                        getNextBooking(item, userId),
-                        getCommentsByItemId(item.getId())))
-                .collect(Collectors.toList());
+        List<ItemDto> itemsDto = new ArrayList<>();
+        List<Booking> bookings = bookingRepository.getBookingsByUserId(userId);
+        List<Item> items = itemRepository.search(itemName);
+        List<Comment> comments = commentRepository.findAll();
+        for (Item item : items) {
+            List<Booking> bookingsByItem = bookings.stream()
+                    .filter(booking -> Objects.equals(booking.getItem().getId(), item.getId()))
+                    .collect(Collectors.toList());
+            itemsDto.add(ItemMapper.toItemDto(item,
+                    getLastBookingWithoutCycle(item, bookingsByItem),
+                    getNextBookingWithoutCycle(item, bookingsByItem),
+                    getCommentsByItemIdWithoutCycle(comments, item.getId())));
+        }
+        return itemsDto;
     }
 
     @Override
@@ -114,11 +127,20 @@ public class ItemServiceImpl implements ItemService {
         checkAvailabilityOfBookingForUser(userId, itemId);
         checkText(comment.getText());
         checkDateOfBookingForComment(userId, itemId);
-        comment.setItem(itemId);
-        comment.setAuthor(userId);
-        String authorName = userRepository.getReferenceById(userId).getName();
+        comment.setItem(itemRepository.getReferenceById(itemId));
+        comment.setAuthor(userRepository.getReferenceById(userId));
         comment.setCreated(LocalDateTime.now());
-        return CommentMapper.toCommentDto(commentRepository.save(comment), authorName);
+        return CommentMapper.toCommentDto(commentRepository.save(comment));
+    }
+
+    private List<CommentDto> getCommentsByItemIdWithoutCycle(List<Comment> comments, Long itemId) {
+        List<CommentDto> commentsDto = new ArrayList<>();
+        for (Comment comment : comments) {
+            if (Objects.equals(comment.getItem().getId(), itemId)) {
+                commentsDto.add(CommentMapper.toCommentDto(comment));
+            }
+        }
+        return commentsDto;
     }
 
     private List<CommentDto> getCommentsByItemId(long itemId) {
@@ -128,7 +150,7 @@ public class ItemServiceImpl implements ItemService {
         }
         List<CommentDto> commentsDto = new ArrayList<>();
         for (Comment comment : comments) {
-            commentsDto.add(CommentMapper.toCommentDto(comment, userRepository.getReferenceById(comment.getAuthor()).getName()));
+            commentsDto.add(CommentMapper.toCommentDto(comment));
         }
         return commentsDto;
     }
@@ -172,12 +194,11 @@ public class ItemServiceImpl implements ItemService {
         return itemOld;
     }
 
-    private BookingDtoForItem getLastBooking(Item item, long userId) {
+    private BookingDtoForItem getLastBookingWithoutCycle(Item item, List<Booking> bookings) {
         BookingDtoForItem bookingDtoForItem = null;
         if (!item.getAvailable()) {
             return null;
         }
-        List<Booking> bookings = bookingRepository.getBookingsByItemId(item.getId(), userId);
         if (bookings.isEmpty()) {
             return null;
         }
@@ -187,6 +208,43 @@ public class ItemServiceImpl implements ItemService {
         for (Booking booking : bookings) {
             if (!booking.getStart().isAfter(LocalDateTime.now())) {
                 bookingDtoForItem = BookingMapper.toBookingDtoForItem(booking);
+            }
+        }
+        return bookingDtoForItem;
+    }
+
+    private BookingDtoForItem getLastBooking(Item item, long userId) {
+        BookingDtoForItem bookingDtoForItem = null;
+        if (!item.getAvailable()) {
+            return null;
+        }
+        List<Booking> bookings = bookingRepository.getBookingsByItemAndUserId(item.getId(), userId);
+        if (bookings.isEmpty()) {
+            return null;
+        }
+        if (bookings.get(0).getStart().isAfter(LocalDateTime.now())) {
+            return null;
+        }
+        for (Booking booking : bookings) {
+            if (!booking.getStart().isAfter(LocalDateTime.now())) {
+                bookingDtoForItem = BookingMapper.toBookingDtoForItem(booking);
+            }
+        }
+        return bookingDtoForItem;
+    }
+
+    private BookingDtoForItem getNextBookingWithoutCycle(Item item, List<Booking> bookings) {
+        BookingDtoForItem bookingDtoForItem = null;
+        if (!item.getAvailable()) {
+            return null;
+        }
+        if (bookings.isEmpty()) {
+            return null;
+        }
+        for (Booking booking : bookings) {
+            if (booking.getStart().isAfter(LocalDateTime.now())) {
+                bookingDtoForItem = BookingMapper.toBookingDtoForItem(booking);
+                return bookingDtoForItem;
             }
         }
         return bookingDtoForItem;
@@ -229,10 +287,6 @@ public class ItemServiceImpl implements ItemService {
         } else if (Objects.isNull(item.getDescription()) || item.getDescription().isBlank()) {
             throw new BadRequest("Item without description");
         }
-    }
-
-    private long getNextId() {
-        return ++nextId;
     }
 
 }

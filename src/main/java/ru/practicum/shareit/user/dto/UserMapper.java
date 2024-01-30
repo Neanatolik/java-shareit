@@ -9,8 +9,20 @@ public class UserMapper {
         return new UserDto(user.getId(), user.getName(), user.getEmail());
     }
 
+    public User fromUserDto(UserDto bookingDto) {
+        User user = new User();
+        user.setId(bookingDto.getId());
+        user.setName(bookingDto.getName());
+        user.setEmail(bookingDto.getEmail());
+        return user;
+    }
+
     public User fromUserDto(UserDto bookingDto, long id) {
-        return new User(id, bookingDto.getName(), bookingDto.getEmail());
+        User user = new User();
+        user.setId(id);
+        user.setName(bookingDto.getName());
+        user.setEmail(bookingDto.getEmail());
+        return user;
     }
 
 }

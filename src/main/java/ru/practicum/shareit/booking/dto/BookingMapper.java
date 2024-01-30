@@ -25,13 +25,15 @@ public class BookingMapper {
                 booking.getBooker().getId());
     }
 
-    public Booking fromBookingDto(BookingDto bookingDto, User user, Item item, Long id) {
-        return new Booking(id,
-                bookingDto.getStart(),
-                bookingDto.getEnd(),
-                item,
-                user,
-                bookingDto.getStatus());
+    public Booking fromBookingDto(BookingDto bookingDto, User user, Item item) {
+        Booking booking = new Booking();
+        booking.setId(bookingDto.getId());
+        booking.setStart(bookingDto.getStart());
+        booking.setEnd(bookingDto.getEnd());
+        booking.setItem(item);
+        booking.setBooker(user);
+        booking.setStatus(bookingDto.getStatus());
+        return booking;
     }
 
     public static BookingDtoSend toBookingDtoSend(Booking booking) {

@@ -36,7 +36,7 @@ public class ItemController {
 
     @GetMapping
     public List<ItemDto> getItemsByUserId(@RequestHeader(user) long userId) {
-        log.info("GET /items");
+        log.info("GET (user: {}) /items", userId);
         return itemService.getItemsByUserId(userId);
     }
 

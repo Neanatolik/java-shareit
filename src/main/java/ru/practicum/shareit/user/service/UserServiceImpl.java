@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
-    private long nextId = 0L;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository) {
@@ -32,7 +31,7 @@ public class UserServiceImpl implements UserService {
     public UserDto saveUser(@Valid UserDto user) {
         checkEmail(user.getEmail());
         checkUser(user);
-        return UserMapper.toUserDto(userRepository.save(UserMapper.fromUserDto(user, getNextId())));
+        return UserMapper.toUserDto(userRepository.save(UserMapper.fromUserDto(user)));
     }
 
     @Override
@@ -80,10 +79,6 @@ public class UserServiceImpl implements UserService {
         if (!EmailValidator.getInstance().isValid(email)) {
             throw new BadRequest("Wrong email");
         }
-    }
-
-    private long getNextId() {
-        return ++nextId;
     }
 
 }

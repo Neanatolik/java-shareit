@@ -84,7 +84,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "where b.item_id = ?1 and \n" +
             "i.owner_id = ?2\n" +
             "order by b.start_date asc", nativeQuery = true)
-    List<Booking> getBookingsByItemId(long itemId, long userId);
+    List<Booking> getBookingsByItemAndUserId(long itemId, long userId);
 
     @Query(value = "select *\n" +
             "from bookings b\n" +
@@ -128,4 +128,11 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "b.end_date < now()\n" +
             "order by b.start_date desc", nativeQuery = true)
     List<Booking> getBookingsItemPast(long userId);
+
+    @Query(value = "select *\n" +
+            "from bookings b\n" +
+            "left join items i on b.item_id  = i.id\n" +
+            "where i.owner_id = ?1\n" +
+            "order by b.start_date asc", nativeQuery = true)
+    List<Booking> getBookingsByUserId(long userId);
 }

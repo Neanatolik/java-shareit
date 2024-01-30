@@ -30,7 +30,6 @@ public class BookingServiceImpl implements BookingService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
-    private long nextId = 0L;
 
     @Autowired
     public BookingServiceImpl(ItemRepository itemRepository, UserRepository userRepository, BookingRepository bookingRepository) {
@@ -50,7 +49,7 @@ public class BookingServiceImpl implements BookingService {
         bookingDto.setStatus(Status.WAITING);
         User user = userRepository.getReferenceById(userId);
         Item item = itemRepository.getReferenceById(bookingDto.getItemId());
-        return BookingMapper.toBookingDtoSend(bookingRepository.save(BookingMapper.fromBookingDto(bookingDto, user, item, getNextId())));
+        return BookingMapper.toBookingDtoSend(bookingRepository.save(BookingMapper.fromBookingDto(bookingDto, user, item)));
     }
 
     @Override
@@ -236,9 +235,5 @@ public class BookingServiceImpl implements BookingService {
         if (itemRepository.getReferenceById(itemId).getOwner().getId() == userId) {
             throw new NotFoundException("Пользователь явлется владельцем вещи");
         }
-    }
-
-    private long getNextId() {
-        return ++nextId;
     }
 }
