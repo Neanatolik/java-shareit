@@ -2,66 +2,186 @@ package ru.practicum.shareit.item.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.dto.BookingDtoForItem;
+import ru.practicum.shareit.booking.dto.BookingMapper;
+import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
+import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.CommentMapper;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
-import ru.practicum.shareit.item.memory.ItemRepositoryImpl;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.memory.UserRepositoryImpl;
+import ru.practicum.shareit.item.repository.CommentRepository;
+import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.repository.UserRepository;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
 
-    private final ItemRepositoryImpl inMemoryItem;
-    private final UserRepositoryImpl inMemoryUser;
-    private long nextId = 0L;
-
+    private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
+    private final BookingRepository bookingRepository;
 
     @Autowired
-    public ItemServiceImpl(ItemRepositoryImpl inMemoryItem, UserRepositoryImpl inMemoryUser) {
-        this.inMemoryItem = inMemoryItem;
-        this.inMemoryUser = inMemoryUser;
+    public ItemServiceImpl(ItemRepository itemRepository,
+                           UserRepository userRepository,
+                           CommentRepository commentRepository, BookingRepository bookingRepository) {
+        this.itemRepository = itemRepository;
+        this.userRepository = userRepository;
+        this.commentRepository = commentRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Override
-    public ItemDto post(ItemDto item, long userId) {
+    @Transactional
+    public ItemDto saveItem(ItemDto itemDto, long userId) {
+        checkItem(itemDto);
         checkItemsUser(userId);
-        checkItem(item);
-        return ItemMapper.toItemDto(inMemoryItem.add(ItemMapper.fromItemDto(item, getNextId(), userId)));
+        User user = userRepository.getReferenceById(userId);
+        Item item = itemRepository.save(ItemMapper.fromItemDto(itemDto, user));
+        return ItemMapper.toItemDto(item,
+                getLastBooking(ItemMapper.fromItemDto(itemDto, item.getId(), user), userId),
+                getNextBooking(ItemMapper.fromItemDto(itemDto, item.getId(), user), userId),
+                getCommentsByItemId(item.getId()));
     }
 
     @Override
-    public ItemDto patch(ItemDto item, long itemId, long userId) {
+    @Transactional
+    public ItemDto changeItem(ItemDto itemDto, long itemId, long userId) {
         checkItemsUser(userId);
         checkBelong(itemId, userId);
-        return ItemMapper.toItemDto(inMemoryItem.patch(updateItem(ItemMapper.fromItemDto(item, itemId, userId), inMemoryItem.getItem(itemId))));
+        User user = userRepository.getReferenceById(userId);
+        Item item = itemRepository.save(updateItem(ItemMapper.fromItemDto(itemDto, itemId, user), itemRepository.getReferenceById(itemId)));
+        return ItemMapper.toItemDto(item,
+                getLastBooking(item, userId),
+                getNextBooking(item, userId),
+                getCommentsByItemId(itemId));
 
     }
 
     @Override
-    public List<ItemDto> getItems(long userId) {
+    public List<ItemDto> getItemsByUserId(long userId) {
         checkItemsUser(userId);
-        return inMemoryItem.getItems(userId);
+        List<ItemDto> itemsDto = new ArrayList<>();
+        List<Booking> bookings = bookingRepository.getBookingsByUserId(userId);
+        List<Item> items = itemRepository.getItems(userId);
+        List<Comment> comments = commentRepository.findAll();
+        for (Item item : items) {
+            List<Booking> bookingsByItem = bookings.stream()
+                    .filter(booking -> Objects.equals(booking.getItem().getId(), item.getId()))
+                    .collect(Collectors.toList());
+            itemsDto.add(ItemMapper.toItemDto(item,
+                    getLastBookingWithoutCycle(item, bookingsByItem),
+                    getNextBookingWithoutCycle(item, bookingsByItem),
+                    getCommentsByItemIdWithoutCycle(comments, item.getId())));
+        }
+        return itemsDto;
     }
 
     @Override
-    public ItemDto getItem(long id) {
-        return ItemMapper.toItemDto(inMemoryItem.getItem(id));
+    public ItemDto getItemByItemAndUserId(long itemId, long userId) {
+        Item item = getItemById(itemId);
+        return ItemMapper.toItemDto(item,
+                getLastBooking(item, userId),
+                getNextBooking(item, userId),
+                getCommentsByItemId(itemId));
     }
 
     @Override
-    public List<ItemDto> search(String itemName) {
+    public List<ItemDto> searchByItemName(String itemName, long userId) {
         if (itemName.isBlank()) return Collections.emptyList();
-        return inMemoryItem.search(itemName);
+        List<ItemDto> itemsDto = new ArrayList<>();
+        List<Booking> bookings = bookingRepository.getBookingsByUserId(userId);
+        List<Item> items = itemRepository.search(itemName);
+        List<Comment> comments = commentRepository.findAll();
+        for (Item item : items) {
+            List<Booking> bookingsByItem = bookings.stream()
+                    .filter(booking -> Objects.equals(booking.getItem().getId(), item.getId()))
+                    .collect(Collectors.toList());
+            itemsDto.add(ItemMapper.toItemDto(item,
+                    getLastBookingWithoutCycle(item, bookingsByItem),
+                    getNextBookingWithoutCycle(item, bookingsByItem),
+                    getCommentsByItemIdWithoutCycle(comments, item.getId())));
+        }
+        return itemsDto;
+    }
+
+    @Override
+    @Transactional
+    public CommentDto postComment(long userId, Long itemId, Comment comment) {
+        checkItemsUser(userId);
+        checkAvailabilityOfBookingForUser(userId, itemId);
+        checkText(comment.getText());
+        checkDateOfBookingForComment(userId, itemId);
+        comment.setItem(itemRepository.getReferenceById(itemId));
+        comment.setAuthor(userRepository.getReferenceById(userId));
+        comment.setCreated(LocalDateTime.now());
+        return CommentMapper.toCommentDto(commentRepository.save(comment));
+    }
+
+    private List<CommentDto> getCommentsByItemIdWithoutCycle(List<Comment> comments, Long itemId) {
+        List<CommentDto> commentsDto = new ArrayList<>();
+        for (Comment comment : comments) {
+            if (Objects.equals(comment.getItem().getId(), itemId)) {
+                commentsDto.add(CommentMapper.toCommentDto(comment));
+            }
+        }
+        return commentsDto;
+    }
+
+    private List<CommentDto> getCommentsByItemId(long itemId) {
+        List<Comment> comments = Collections.emptyList();
+        if (commentRepository.getItemIds().contains(itemId)) {
+            comments = commentRepository.getCommentsByItemId(itemId);
+        }
+        List<CommentDto> commentsDto = new ArrayList<>();
+        for (Comment comment : comments) {
+            commentsDto.add(CommentMapper.toCommentDto(comment));
+        }
+        return commentsDto;
+    }
+
+    private void checkDateOfBookingForComment(long userId, Long itemId) {
+        if (bookingRepository.getBookingsByStatusAndUserAndItemAndTime(userId, itemId).isEmpty()) {
+            throw new BadRequest("Ещё не время!");
+        }
+    }
+
+    private void checkText(String text) {
+        if (Objects.isNull(text)) {
+            throw new BadRequest("Текст не предоставлен");
+        }
+        if (text.isBlank() || text.isEmpty()) {
+            throw new BadRequest("Текст пустой");
+        }
+    }
+
+    private void checkAvailabilityOfBookingForUser(long userId, Long itemId) {
+        if (!(bookingRepository.getBookerByItemId(itemId).contains(userId))) {
+            throw new BadRequest("У данного пользователя нет бронирования");
+        }
+    }
+
+    private Item getItemById(Long id) {
+        return itemRepository.findById(id).orElseThrow(() -> new NotFoundException(String.format("Item %d doesn't exist", id)));
     }
 
     private void checkBelong(long itemId, long userId) {
-        Long itemFromId = inMemoryItem.getItem(itemId).getOwner();
+        Long itemFromId = itemRepository.getReferenceById(itemId).getOwner().getId();
         if (!Objects.equals(itemFromId, userId)) {
             throw new NotFoundException(String.format("User %d doesn't have item %d", userId, itemId));
         }
@@ -74,8 +194,87 @@ public class ItemServiceImpl implements ItemService {
         return itemOld;
     }
 
+    private BookingDtoForItem getLastBookingWithoutCycle(Item item, List<Booking> bookings) {
+        BookingDtoForItem bookingDtoForItem = null;
+        if (!item.getAvailable()) {
+            return null;
+        }
+        if (bookings.isEmpty()) {
+            return null;
+        }
+        if (bookings.get(0).getStart().isAfter(LocalDateTime.now())) {
+            return null;
+        }
+        for (Booking booking : bookings) {
+            if (!booking.getStart().isAfter(LocalDateTime.now())) {
+                bookingDtoForItem = BookingMapper.toBookingDtoForItem(booking);
+            }
+        }
+        return bookingDtoForItem;
+    }
+
+    private BookingDtoForItem getLastBooking(Item item, long userId) {
+        BookingDtoForItem bookingDtoForItem = null;
+        if (!item.getAvailable()) {
+            return null;
+        }
+        List<Booking> bookings = bookingRepository.getBookingsByItemAndUserId(item.getId(), userId);
+        if (bookings.isEmpty()) {
+            return null;
+        }
+        if (bookings.get(0).getStart().isAfter(LocalDateTime.now())) {
+            return null;
+        }
+        for (Booking booking : bookings) {
+            if (!booking.getStart().isAfter(LocalDateTime.now())) {
+                bookingDtoForItem = BookingMapper.toBookingDtoForItem(booking);
+            }
+        }
+        return bookingDtoForItem;
+    }
+
+    private BookingDtoForItem getNextBookingWithoutCycle(Item item, List<Booking> bookings) {
+        BookingDtoForItem bookingDtoForItem = null;
+        if (!item.getAvailable()) {
+            return null;
+        }
+        if (bookings.isEmpty()) {
+            return null;
+        }
+        for (Booking booking : bookings) {
+            if (booking.getStart().isAfter(LocalDateTime.now())) {
+                bookingDtoForItem = BookingMapper.toBookingDtoForItem(booking);
+                return bookingDtoForItem;
+            }
+        }
+        return bookingDtoForItem;
+    }
+
+    private BookingDtoForItem getNextBooking(Item item, long userId) {
+        BookingDtoForItem bookingDtoForItem = null;
+        if (!item.getAvailable()) {
+            return null;
+        }
+        List<Booking> bookings = bookingRepository.getBookingsByItemIdDesc(item.getId(), userId);
+
+        if (bookings.isEmpty()) {
+            return null;
+        }
+        if (bookings.get(0).getEnd().isBefore(LocalDateTime.now())) {
+            return null;
+        }
+
+        for (Booking booking : bookings) {
+            if (booking.getStart().isAfter(LocalDateTime.now())) {
+                bookingDtoForItem = BookingMapper.toBookingDtoForItem(booking);
+            }
+        }
+        return bookingDtoForItem;
+    }
+
+
     private void checkItemsUser(long userId) {
-        if (!inMemoryUser.getIds().contains(userId)) {
+        if (!userRepository.existUserId(userId)) {
             throw new NotFoundException(String.format("User %d doesn't exist", userId));
         }
     }
@@ -88,10 +287,6 @@ public class ItemServiceImpl implements ItemService {
         } else if (Objects.isNull(item.getDescription()) || item.getDescription().isBlank()) {
             throw new BadRequest("Item without description");
         }
-    }
-
-    private long getNextId() {
-        return ++nextId;
     }
 
 }

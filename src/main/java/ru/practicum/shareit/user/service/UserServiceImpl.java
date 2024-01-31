@@ -3,55 +3,64 @@ package ru.practicum.shareit.user.service;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exceptions.BadRequest;
-import ru.practicum.shareit.exceptions.ConflictException;
+import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserMapper;
-import ru.practicum.shareit.user.memory.UserRepositoryImpl;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
-    private final UserRepositoryImpl inMemoryUser;
-    private long nextId = 0L;
+    private final UserRepository userRepository;
 
     @Autowired
-    public UserServiceImpl(UserRepositoryImpl inMemoryUser) {
-        this.inMemoryUser = inMemoryUser;
+    public UserServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Override
-    public UserDto post(@Valid UserDto user) {
+    @Transactional
+    public UserDto saveUser(@Valid UserDto user) {
         checkEmail(user.getEmail());
         checkUser(user);
-        return UserMapper.toUserDto(inMemoryUser.add(UserMapper.fromUserDto(user, getNextId())));
+        return UserMapper.toUserDto(userRepository.save(UserMapper.fromUserDto(user)));
     }
 
     @Override
-    public UserDto patch(@Valid UserDto user, long id) {
-        User oldUser = inMemoryUser.getUserById(id);
-        if (Objects.nonNull(user.getEmail()) && !user.getEmail().equals(oldUser.getEmail()))
-            checkEmail(user.getEmail());
-        return UserMapper.toUserDto(inMemoryUser.patch(updateUser(UserMapper.fromUserDto(user, id), inMemoryUser.getUserById(id)), id));
+    @Transactional
+    public UserDto changeUser(@Valid UserDto user, long id) {
+        if (!Objects.isNull(user.getEmail())) checkEmail(user.getEmail());
+        User newUser = updateUser(UserMapper.fromUserDto(user, id), getUserById(id));
+        userRepository.save(newUser);
+        return UserMapper.toUserDto(newUser);
     }
 
     @Override
     public UserDto getUser(long id) {
-        return UserMapper.toUserDto(inMemoryUser.getUserById(id));
+        return UserMapper.toUserDto(getUserById(id));
     }
 
     @Override
     public List<UserDto> getUsers() {
-        return inMemoryUser.getUsers();
+        return userRepository.findAll().stream().map(UserMapper::toUserDto).collect(Collectors.toList());
     }
 
     @Override
+    @Transactional
     public void deleteUser(long id) {
-        inMemoryUser.deleteUser(id);
+        userRepository.deleteById(id);
+    }
+
+    public User getUserById(long id) {
+        return userRepository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с таким id не существует"));
     }
 
     private User updateUser(User userNew, User userOld) {
@@ -69,13 +78,7 @@ public class UserServiceImpl implements UserService {
     private void checkEmail(String email) {
         if (!EmailValidator.getInstance().isValid(email)) {
             throw new BadRequest("Wrong email");
-        } else if (inMemoryUser.getEmails().contains(email)) {
-            throw new ConflictException("User with this email already exists");
         }
-    }
-
-    private long getNextId() {
-        return ++nextId;
     }
 
 }

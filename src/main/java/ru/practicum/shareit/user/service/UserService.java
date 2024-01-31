@@ -6,9 +6,9 @@ import javax.validation.Valid;
 import java.util.List;
 
 public interface UserService {
-    UserDto post(@Valid UserDto user);
+    UserDto saveUser(@Valid UserDto user);
 
-    UserDto patch(@Valid UserDto user, long id);
+    UserDto changeUser(@Valid UserDto user, long id);
 
     UserDto getUser(long id);
 
