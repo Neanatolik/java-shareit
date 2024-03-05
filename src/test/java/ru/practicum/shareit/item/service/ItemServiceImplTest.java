@@ -52,7 +52,7 @@ class ItemServiceImplTest {
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
         ItemDto itemDto = makeItemDto("Item", "Item", true);
-        service.saveItem(itemDto, 1L);
+        service.saveItem(itemDto, 1);
         TypedQuery<Item> query = em.createQuery("Select i from Item i where i.description = :description", Item.class);
         Item item = query.setParameter("description", itemDto.getDescription())
                 .getSingleResult();
@@ -71,7 +71,7 @@ class ItemServiceImplTest {
         em.persist(ItemMapper.fromItemDto(itemDto, user));
         ItemDto itemDtoChanged = makeItemDto("NewItem", "NewItem", true);
         assertThrows(NotFoundException.class, () -> service.changeItem(itemDtoChanged, 2L, 3L));
-        service.changeItem(itemDtoChanged, 2L, 2L);
+        service.changeItem(itemDtoChanged, 2, 2);
         TypedQuery<Item> query = em.createQuery("Select i from Item i where i.description = :description", Item.class);
         Item item = query.setParameter("description", itemDtoChanged.getDescription())
                 .getSingleResult();
@@ -94,7 +94,7 @@ class ItemServiceImplTest {
             em.persist(entity);
         }
         em.flush();
-        List<ItemDto> targetItems = service.getItemsByUserId(4L);
+        List<ItemDto> targetItems = service.getItemsByUserId(4);
         assertThat(targetItems, hasSize(itemDtos.size()));
         for (ItemDto itemDto : itemDtos) {
             assertThat(targetItems, hasItem(allOf(
@@ -108,7 +108,7 @@ class ItemServiceImplTest {
         item1.setId(itemId);
         Comment comment = makeComment("TextComment", user, ItemMapper.fromItemDto(item1, user));
         em.persist(comment);
-        targetItems = service.getItemsByUserId(4L);
+        targetItems = service.getItemsByUserId(4);
         itemDtos.add(item1);
         assertThat(targetItems, hasSize(itemDtos.size()));
         for (ItemDto itemDto : itemDtos) {
@@ -126,7 +126,7 @@ class ItemServiceImplTest {
         em.persist(user);
         ItemDto itemDto = makeItemDto("Item", "Item", true);
         em.persist(ItemMapper.fromItemDto(itemDto, user));
-        ItemDto itemFromDb = service.getItemByItemAndUserId(7L, 5L);
+        ItemDto itemFromDb = service.getItemByItemAndUserId(7, 5);
         assertThat(itemFromDb.getId(), notNullValue());
         assertThat(itemFromDb.getDescription(), equalTo(itemDto.getDescription()));
     }
@@ -146,8 +146,8 @@ class ItemServiceImplTest {
             em.persist(entity);
         }
         em.flush();
-        assertThat(service.searchByItemName(" ", 6L), hasSize(0));
-        List<ItemDto> itemFromDb = service.searchByItemName("2", 6L);
+        assertThat(service.searchByItemName(" ", 6), hasSize(0));
+        List<ItemDto> itemFromDb = service.searchByItemName("2", 6);
         assertThat(itemFromDb, hasSize(1));
         for (ItemDto itemDto : itemFromDb) {
             assertThat(itemFromDb, hasItem(allOf(
