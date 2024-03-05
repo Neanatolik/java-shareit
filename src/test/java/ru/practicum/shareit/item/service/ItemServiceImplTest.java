@@ -9,31 +9,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingMapper;
-import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.enums.Status;
 import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.item.dto.CommentDto;
-import ru.practicum.shareit.item.dto.CommentMapper;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.request.dto.ItemRequestDto;
-import ru.practicum.shareit.request.dto.ItemRequestMapper;
-import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.transaction.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.hasProperty;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Transactional
@@ -49,7 +41,7 @@ class ItemServiceImplTest {
     @Test
     @Order(1)
     void saveItem() {
-        ItemDto itemDtoWrong  = new ItemDto();
+        ItemDto itemDtoWrong = new ItemDto();
         assertThrows(BadRequest.class, () -> service.saveItem(itemDtoWrong, 1L));
         itemDtoWrong.setAvailable(true);
         assertThrows(BadRequest.class, () -> service.saveItem(itemDtoWrong, 1L));
@@ -111,10 +103,10 @@ class ItemServiceImplTest {
             )));
         }
         ItemDto item1 = makeItemDto("ItemForComment", "WithComment", true);
-        em.persist(ItemMapper.fromItemDto(item1,user));
+        em.persist(ItemMapper.fromItemDto(item1, user));
         Long itemId = em.createQuery("Select id From Item i Where description = 'WithComment'", Long.class).getSingleResult();
         item1.setId(itemId);
-        Comment comment = makeComment("TextComment", user, ItemMapper.fromItemDto(item1,user));
+        Comment comment = makeComment("TextComment", user, ItemMapper.fromItemDto(item1, user));
         em.persist(comment);
         targetItems = service.getItemsByUserId(4L);
         itemDtos.add(item1);
@@ -170,7 +162,7 @@ class ItemServiceImplTest {
     void postComment() {
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
-        ItemDto item = makeItemDto("itemName","itemDescription",true);
+        ItemDto item = makeItemDto("itemName", "itemDescription", true);
         em.persist(ItemMapper.fromItemDto(item, user));
         Long userId = em.createQuery("Select id From User u", Long.class).getSingleResult();
         Long itemId = em.createQuery("Select id From Item i", Long.class).getSingleResult();

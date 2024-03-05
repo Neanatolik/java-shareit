@@ -84,8 +84,8 @@ class ItemRequestServiceImplTest {
         em.flush();
 
         List<ItemRequestDto> targetItemRequests = service.getItemRequestsByOwner(2L);
-        List<ItemRequestDto> user1ItemRequests = sourceItemRequests.stream().
-                filter(ir -> ir.getRequestor().getName().equals("user1")).collect(Collectors.toList());
+        List<ItemRequestDto> user1ItemRequests = sourceItemRequests.stream()
+                .filter(ir -> ir.getRequestor().getName().equals("user1")).collect(Collectors.toList());
         assertThat(targetItemRequests, hasSize(user1ItemRequests.size()));
         for (ItemRequestDto itemRequestDto : user1ItemRequests) {
             assertThat(targetItemRequests, hasItem(allOf(
