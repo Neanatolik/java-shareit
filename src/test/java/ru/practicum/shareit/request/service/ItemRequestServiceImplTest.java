@@ -50,8 +50,9 @@ class ItemRequestServiceImplTest {
 
         em.persist(user);
         ItemRequestDto itemRequestDto1 = makeItemRequestDto("Item Request 1", user);
-        service.saveItemRequest(itemRequestDto1, 1L);
-
+        System.out.println(em.createQuery("Select u From User u", User.class).getResultList());
+        service.saveItemRequest(itemRequestDto1, new Long(1));
+        System.out.println(em.createQuery("Select ir From ItemRequest ir", ItemRequest.class).getResultList());
         TypedQuery<ItemRequest> query = em.createQuery("Select ir from ItemRequest ir where ir.description = :description", ItemRequest.class);
         ItemRequest itemRequest = query.setParameter("description", itemRequestDto1.getDescription())
                 .getSingleResult();
