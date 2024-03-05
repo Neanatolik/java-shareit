@@ -49,7 +49,7 @@ class ItemRequestServiceImplTest {
         em.persist(user);
         ItemRequestDto itemRequestDto1 = makeItemRequestDto("Item Request 1", user);
         System.out.println(em.createQuery("Select u From User u", User.class).getResultList());
-        service.saveItemRequest(itemRequestDto1, 1L);
+        service.saveItemRequest(itemRequestDto1, user.getId());
         System.out.println(em.createQuery("Select ir From ItemRequest ir", ItemRequest.class).getResultList());
         TypedQuery<ItemRequest> query = em.createQuery("Select ir from ItemRequest ir where ir.description = :description", ItemRequest.class);
         ItemRequest itemRequest = query.setParameter("description", itemRequestDto1.getDescription())
@@ -82,7 +82,7 @@ class ItemRequestServiceImplTest {
         }
         em.flush();
 
-        List<ItemRequestDto> targetItemRequests = service.getItemRequestsByOwner(2L);
+        List<ItemRequestDto> targetItemRequests = service.getItemRequestsByOwner(user.getId());
         List<ItemRequestDto> user1ItemRequests = sourceItemRequests.stream()
                 .filter(ir -> ir.getRequestor().getName().equals("user1")).collect(Collectors.toList());
         assertThat(targetItemRequests, hasSize(user1ItemRequests.size()));
@@ -118,7 +118,7 @@ class ItemRequestServiceImplTest {
         Item item2 = makeItem("item1", "item1", true, user, 7L);
         em.persist(item2);
 
-        List<ItemRequestDto> targetItemRequests = service.getAllItemRequests(3L, 0, 10);
+        List<ItemRequestDto> targetItemRequests = service.getAllItemRequests(user.getId(), 0, 10);
         assertThat(targetItemRequests, hasSize(targetItemRequests.size()));
         for (ItemRequestDto itemRequestDto : targetItemRequests) {
             assertThat(targetItemRequests, hasItem(allOf(
@@ -134,12 +134,13 @@ class ItemRequestServiceImplTest {
         assertThrows(NotFoundException.class, () -> service.getItemRequestsByOwnerById(5L, 0L));
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
-        assertThrows(NotFoundException.class, () -> service.getItemRequestsByOwnerById(5L, 0L));
+        assertThrows(NotFoundException.class, () -> service.getItemRequestsByOwnerById(user.getId(), 0L));
         ItemRequestDto itemRequestDto1 = makeItemRequestDto("Item Request 1", user);
-        Item item = makeItem("item1", "item1", true, user, 8L);
-        em.persist(ItemRequestMapper.fromItemRequestDto(itemRequestDto1));
+        ItemRequest itemRequest = ItemRequestMapper.fromItemRequestDto(itemRequestDto1);
+        em.persist(itemRequest);
+        Item item = makeItem("item1", "item1", true, user, itemRequest.getId());
         em.persist(item);
-        ItemRequestDto itemRequestDto = service.getItemRequestsByOwnerById(5L, 8L);
+        ItemRequestDto itemRequestDto = service.getItemRequestsByOwnerById(user.getId(), itemRequest.getId());
         assertThat(itemRequestDto.getId(), notNullValue());
         assertThat(itemRequestDto.getDescription(), equalTo(itemRequestDto1.getDescription()));
     }
