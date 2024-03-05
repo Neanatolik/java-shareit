@@ -18,7 +18,8 @@ public class ItemMapper {
                 item.getAvailable(),
                 lastBooking,
                 nextBooking,
-                comments);
+                comments,
+                item.getRequestId());
     }
 
     public ItemDtoForBooking toItemDtoForBooking(Item item) {
@@ -28,13 +29,14 @@ public class ItemMapper {
     }
 
     public Item fromItemDto(ItemDto itemDto, long id, User user) {
-        return new Item(
-                id,
-                itemDto.getName(),
-                itemDto.getDescription(),
-                itemDto.getAvailable(),
-                user
-        );
+        Item item = new Item();
+        item.setId(id);
+        item.setName(itemDto.getName());
+        item.setDescription(itemDto.getDescription());
+        item.setAvailable(itemDto.getAvailable());
+        item.setOwner(user);
+        item.setRequestId(itemDto.getRequestId());
+        return item;
     }
 
     public Item fromItemDto(ItemDto itemDto, User user) {
@@ -44,6 +46,7 @@ public class ItemMapper {
         item.setDescription(itemDto.getDescription());
         item.setAvailable(itemDto.getAvailable());
         item.setOwner(user);
+        item.setRequestId(itemDto.getRequestId());
         return item;
     }
 }

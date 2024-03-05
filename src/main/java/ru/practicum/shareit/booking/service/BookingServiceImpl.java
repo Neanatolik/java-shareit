@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -16,6 +17,7 @@ import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
+import java.awt.print.Pageable;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -77,10 +79,12 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDtoSend> getBookingWithState(long userId, String state) {
+    public List<BookingDtoSend> getBookingWithState(long userId, String state, int from, int size) {
         checkUser(userId);
         checkState(state);
-        List<Booking> listBooking = getListOfBookingByStateAndUser(userId, state);
+        checkFromAndSize(from, size);
+        PageRequest page = PageRequest.of(from > 0 ? from / size : 0, size);
+        List<Booking> listBooking = getListOfBookingByStateAndUser(userId, state, page);
         List<BookingDtoSend> listBookingDtoSend = new LinkedList<>();
         for (Booking b : listBooking) {
             listBookingDtoSend.add(BookingMapper.toBookingDtoSend(b));
@@ -89,15 +93,23 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDtoSend> getOwnersItem(long ownerId, String state) {
+    public List<BookingDtoSend> getOwnersItem(long ownerId, String state, int from, int size) {
         checkUser(ownerId);
         checkState(state);
-        List<Booking> listBooking = getListOfBookingByStateAndUserForOwner(ownerId, state);
+        checkFromAndSize(from, size);
+        PageRequest page = PageRequest.of(from > 0 ? from / size : 0, size);
+        List<Booking> listBooking = getListOfBookingByStateAndUserForOwner(ownerId, state, page);
         List<BookingDtoSend> listBookingDtoSend = new LinkedList<>();
         for (Booking b : listBooking) {
             listBookingDtoSend.add(BookingMapper.toBookingDtoSend(b));
         }
         return listBookingDtoSend;
+    }
+
+    private void checkFromAndSize(int from, int size) {
+        if ((from < 0) || (size <= 0)) {
+            throw new BadRequest("Неверные значения");
+        }
     }
 
     private void checkOwning(long bookingId, long userId) {
@@ -112,11 +124,11 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private List<Booking> getListOfBookingByStateAndUserForOwner(long userId, String state) {
+    private List<Booking> getListOfBookingByStateAndUserForOwner(long userId, String state, PageRequest page) {
         List<Booking> listBooking;
         switch (Status.valueOf(state)) {
             case ALL:
-                listBooking = bookingRepository.getOwnersItemAll(userId);
+                listBooking = bookingRepository.getOwnersItemAll(userId, page);
                 break;
             case PAST:
                 listBooking = bookingRepository.getOwnersItemPast(userId);
@@ -139,11 +151,11 @@ public class BookingServiceImpl implements BookingService {
         return listBooking;
     }
 
-    private List<Booking> getListOfBookingByStateAndUser(long userId, String state) {
+    private List<Booking> getListOfBookingByStateAndUser(long userId, String state, PageRequest page) {
         List<Booking> listBooking;
         switch (Status.valueOf(state)) {
             case ALL:
-                listBooking = bookingRepository.getBookingsItemAll(userId);
+                listBooking = bookingRepository.getBookingsItemAll(userId, page);
                 break;
             case PAST:
                 listBooking = bookingRepository.getBookingsItemPast(userId);

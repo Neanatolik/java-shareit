@@ -70,7 +70,6 @@ public class ItemServiceImpl implements ItemService {
                 getLastBooking(item, userId),
                 getNextBooking(item, userId),
                 getCommentsByItemId(itemId));
-
     }
 
     @Override
