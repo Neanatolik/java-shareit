@@ -61,9 +61,9 @@ class UserServiceImplTest {
     @Order(2)
     void changeUser() {
         userDto1.setName("newName");
-        em.persist(UserMapper.fromUserDto(userDto1));
-        em.flush();
-        service.changeUser(userDto1, 2);
+        User user1 = UserMapper.fromUserDto(userDto1);
+        em.persist(user1);
+        service.changeUser(userDto1, user1.getId());
 
         TypedQuery<User> query = em.createQuery("Select u from User u where u.email = :email", User.class);
         User user = query.setParameter("email", userDto1.getEmail())
@@ -78,9 +78,9 @@ class UserServiceImplTest {
     @Test
     @Order(3)
     void getUser() {
-        em.persist(UserMapper.fromUserDto(userDto1));
-        em.flush();
-        UserDto userGet = service.getUser(3);
+        User user1 = UserMapper.fromUserDto(userDto1);
+        em.persist(user1);
+        UserDto userGet = service.getUser(user1.getId());
 
         TypedQuery<User> query = em.createQuery("Select u from User u where u.email = :email", User.class);
         User user = query.setParameter("email", userDto1.getEmail())
@@ -122,9 +122,9 @@ class UserServiceImplTest {
     @Test
     @Order(5)
     void deleteUser() {
-        em.persist(UserMapper.fromUserDto(userDto1));
-        em.flush();
-        service.deleteUser(7);
+        User user1 = UserMapper.fromUserDto(userDto1);
+        em.persist(user1);
+        service.deleteUser(user1.getId());
         List<UserDto> targetUsers = service.getUsers();
         assertThat(targetUsers, hasSize(0));
     }
