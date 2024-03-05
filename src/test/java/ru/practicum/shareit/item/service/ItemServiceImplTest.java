@@ -68,10 +68,11 @@ class ItemServiceImplTest {
         User user2 = makeUser("user2", "user2@mail.com");
         em.persist(user2);
         ItemDto itemDto = makeItemDto("Item", "Item", true);
-        em.persist(ItemMapper.fromItemDto(itemDto, user));
+        Item item1 = ItemMapper.fromItemDto(itemDto, user);
+        em.persist(item1);
         ItemDto itemDtoChanged = makeItemDto("NewItem", "NewItem", true);
-        assertThrows(NotFoundException.class, () -> service.changeItem(itemDtoChanged, 2L, 3L));
-        service.changeItem(itemDtoChanged, 2, user.getId());
+        assertThrows(NotFoundException.class, () -> service.changeItem(itemDtoChanged, item1.getId(), 3L));
+        service.changeItem(itemDtoChanged, item1.getId(), user.getId());
         TypedQuery<Item> query = em.createQuery("Select i from Item i where i.description = :description", Item.class);
         Item item = query.setParameter("description", itemDtoChanged.getDescription())
                 .getSingleResult();
@@ -108,7 +109,7 @@ class ItemServiceImplTest {
         item1.setId(itemId);
         Comment comment = makeComment("TextComment", user, ItemMapper.fromItemDto(item1, user));
         em.persist(comment);
-        targetItems = service.getItemsByUserId(4);
+        targetItems = service.getItemsByUserId(user.getId());
         itemDtos.add(item1);
         assertThat(targetItems, hasSize(itemDtos.size()));
         for (ItemDto itemDto : itemDtos) {
@@ -125,8 +126,9 @@ class ItemServiceImplTest {
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
         ItemDto itemDto = makeItemDto("Item", "Item", true);
-        em.persist(ItemMapper.fromItemDto(itemDto, user));
-        ItemDto itemFromDb = service.getItemByItemAndUserId(7, user.getId());
+        Item item = ItemMapper.fromItemDto(itemDto, user);
+        em.persist(item);
+        ItemDto itemFromDb = service.getItemByItemAndUserId(item.getId(), user.getId());
         assertThat(itemFromDb.getId(), notNullValue());
         assertThat(itemFromDb.getDescription(), equalTo(itemDto.getDescription()));
     }
