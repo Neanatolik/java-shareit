@@ -52,7 +52,6 @@ class ItemServiceImplTest {
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
         ItemDto itemDto = makeItemDto("Item", "Item", true);
-        user.setId(1L);
         service.saveItem(itemDto, user.getId());
         TypedQuery<Item> query = em.createQuery("Select i from Item i where i.description = :description", Item.class);
         Item item = query.setParameter("description", itemDto.getDescription())
@@ -72,7 +71,7 @@ class ItemServiceImplTest {
         em.persist(ItemMapper.fromItemDto(itemDto, user));
         ItemDto itemDtoChanged = makeItemDto("NewItem", "NewItem", true);
         assertThrows(NotFoundException.class, () -> service.changeItem(itemDtoChanged, 2L, 3L));
-        service.changeItem(itemDtoChanged, 2, 2);
+        service.changeItem(itemDtoChanged, 2, user.getId());
         TypedQuery<Item> query = em.createQuery("Select i from Item i where i.description = :description", Item.class);
         Item item = query.setParameter("description", itemDtoChanged.getDescription())
                 .getSingleResult();
@@ -95,7 +94,7 @@ class ItemServiceImplTest {
             em.persist(entity);
         }
         em.flush();
-        List<ItemDto> targetItems = service.getItemsByUserId(4);
+        List<ItemDto> targetItems = service.getItemsByUserId(user.getId());
         assertThat(targetItems, hasSize(itemDtos.size()));
         for (ItemDto itemDto : itemDtos) {
             assertThat(targetItems, hasItem(allOf(
@@ -127,7 +126,7 @@ class ItemServiceImplTest {
         em.persist(user);
         ItemDto itemDto = makeItemDto("Item", "Item", true);
         em.persist(ItemMapper.fromItemDto(itemDto, user));
-        ItemDto itemFromDb = service.getItemByItemAndUserId(7, 5);
+        ItemDto itemFromDb = service.getItemByItemAndUserId(7, user.getId());
         assertThat(itemFromDb.getId(), notNullValue());
         assertThat(itemFromDb.getDescription(), equalTo(itemDto.getDescription()));
     }
@@ -147,8 +146,8 @@ class ItemServiceImplTest {
             em.persist(entity);
         }
         em.flush();
-        assertThat(service.searchByItemName(" ", 6), hasSize(0));
-        List<ItemDto> itemFromDb = service.searchByItemName("2", 6);
+        assertThat(service.searchByItemName(" ", user.getId()), hasSize(0));
+        List<ItemDto> itemFromDb = service.searchByItemName("2", user.getId());
         assertThat(itemFromDb, hasSize(1));
         for (ItemDto itemDto : itemFromDb) {
             assertThat(itemFromDb, hasItem(allOf(
