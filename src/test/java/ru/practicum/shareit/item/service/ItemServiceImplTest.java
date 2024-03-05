@@ -52,7 +52,8 @@ class ItemServiceImplTest {
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
         ItemDto itemDto = makeItemDto("Item", "Item", true);
-        service.saveItem(itemDto, 1);
+        user.setId(1L);
+        service.saveItem(itemDto, user.getId());
         TypedQuery<Item> query = em.createQuery("Select i from Item i where i.description = :description", Item.class);
         Item item = query.setParameter("description", itemDto.getDescription())
                 .getSingleResult();

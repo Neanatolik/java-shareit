@@ -44,14 +44,12 @@ class ItemRequestServiceImplTest {
 
         ItemRequestDto itemRequestDtoWrong = new ItemRequestDto();
         assertThrows(BadRequest.class, () -> service.saveItemRequest(itemRequestDtoWrong, 1L));
-
         itemRequestDtoWrong.setDescription("Wrong itemRequest");
         assertThrows(NotFoundException.class, () -> service.saveItemRequest(itemRequestDtoWrong, 1L));
-
         em.persist(user);
         ItemRequestDto itemRequestDto1 = makeItemRequestDto("Item Request 1", user);
         System.out.println(em.createQuery("Select u From User u", User.class).getResultList());
-        service.saveItemRequest(itemRequestDto1, new Long(1));
+        service.saveItemRequest(itemRequestDto1, 1L);
         System.out.println(em.createQuery("Select ir From ItemRequest ir", ItemRequest.class).getResultList());
         TypedQuery<ItemRequest> query = em.createQuery("Select ir from ItemRequest ir where ir.description = :description", ItemRequest.class);
         ItemRequest itemRequest = query.setParameter("description", itemRequestDto1.getDescription())
