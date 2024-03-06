@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingMapper;
+import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.enums.Status;
 import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
@@ -85,6 +86,7 @@ class ItemServiceImplTest {
     void getItemsByUserId() {
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
+
         List<ItemDto> itemDtos = new java.util.ArrayList<>(List.of(
                 makeItemDto("Item1", "Item1", true),
                 makeItemDto("Item2", "Item2", true),
@@ -128,6 +130,8 @@ class ItemServiceImplTest {
         ItemDto itemDto = makeItemDto("Item", "Item", true);
         Item item = ItemMapper.fromItemDto(itemDto, user);
         em.persist(item);
+        Comment comment = makeComment("Comment", user, item);
+        em.persist(comment);
         ItemDto itemFromDb = service.getItemByItemAndUserId(item.getId(), user.getId());
         assertThat(itemFromDb.getId(), notNullValue());
         assertThat(itemFromDb.getDescription(), equalTo(itemDto.getDescription()));
@@ -138,15 +142,17 @@ class ItemServiceImplTest {
     void searchByItemName() {
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
-        List<ItemDto> itemDtos = List.of(
-                makeItemDto("Item1", "Item1", true),
-                makeItemDto("Item2", "Item2", true),
-                makeItemDto("Item3", "Item3", false)
-        );
-        for (ItemDto itemDto : itemDtos) {
-            Item entity = ItemMapper.fromItemDto(itemDto, user);
-            em.persist(entity);
-        }
+        User user2 = makeUser("user2", "user2@mail.com");
+        em.persist(user2);
+        ItemDto itemDto1 = makeItemDto("Item1", "Item1", true);
+        ItemDto itemDto2 = makeItemDto("Item2", "Item2", true);
+        ItemDto itemDto3 = makeItemDto("Item3", "Item3", true);
+        Item item1 = ItemMapper.fromItemDto(itemDto1, user);
+        Item item2 = ItemMapper.fromItemDto(itemDto2, user);
+        Item item3 = ItemMapper.fromItemDto(itemDto3, user);
+        em.persist(item1);
+        em.persist(item2);
+        em.persist(item3);
         em.flush();
         assertThat(service.searchByItemName(" ", user.getId()), hasSize(0));
         List<ItemDto> itemFromDb = service.searchByItemName("2", user.getId());
@@ -157,6 +163,11 @@ class ItemServiceImplTest {
                     hasProperty("description", equalTo(itemDto.getDescription()))
             )));
         }
+        BookingDto bookingDto = makeBooking(user2.getId(), item1.getId(),
+                LocalDateTime.now().minusDays(2), LocalDateTime.now().plusDays(4));
+        Booking booking = BookingMapper.fromBookingDto(bookingDto, user2, item1);
+        em.persist(booking);
+        System.out.println(service.searchByItemName("2", user2.getId()));
     }
 
     @Test
@@ -166,34 +177,33 @@ class ItemServiceImplTest {
         em.persist(user);
         ItemDto item = makeItemDto("itemName", "itemDescription", true);
         em.persist(ItemMapper.fromItemDto(item, user));
-        Long userId = em.createQuery("Select id From User u", Long.class).getSingleResult();
         Long itemId = em.createQuery("Select id From Item i", Long.class).getSingleResult();
-        user.setId(userId);
+        user.setId(user.getId());
         item.setId(itemId);
         Comment commentDtoWrong = new Comment();
-        assertThrows(BadRequest.class, () -> service.postComment(userId, itemId, commentDtoWrong));
-        BookingDto bookingDto = makeBooking(userId, itemId);
+        assertThrows(BadRequest.class, () -> service.postComment(user.getId(), itemId, commentDtoWrong));
+        BookingDto bookingDto = makeBooking(user.getId(), itemId, LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(4));
         bookingDto.setStatus(Status.APPROVED);
         em.persist(BookingMapper.fromBookingDto(bookingDto, user, ItemMapper.fromItemDto(item, user)));
-        assertThrows(BadRequest.class, () -> service.postComment(userId, itemId, commentDtoWrong));
+        assertThrows(BadRequest.class, () -> service.postComment(user.getId(), itemId, commentDtoWrong));
         commentDtoWrong.setText("  ");
-        assertThrows(BadRequest.class, () -> service.postComment(userId, itemId, commentDtoWrong));
+        assertThrows(BadRequest.class, () -> service.postComment(user.getId(), itemId, commentDtoWrong));
         commentDtoWrong.setText("Text");
-        assertThrows(BadRequest.class, () -> service.postComment(userId, itemId, commentDtoWrong));
+        assertThrows(BadRequest.class, () -> service.postComment(user.getId(), itemId, commentDtoWrong));
         bookingDto.setStart(LocalDateTime.now().minusDays(2));
         em.persist(BookingMapper.fromBookingDto(bookingDto, user, ItemMapper.fromItemDto(item, user)));
         Comment comment = makeComment("commentText", user, ItemMapper.fromItemDto(item, user));
-        service.postComment(userId, itemId, comment);
+        service.postComment(user.getId(), itemId, comment);
         Comment commentFromDb = em.createQuery("Select c From Comment c", Comment.class).getSingleResult();
         assertThat(commentFromDb.getId(), notNullValue());
         assertThat(commentFromDb.getText(), equalTo(comment.getText()));
 
     }
 
-    private BookingDto makeBooking(Long userId, Long itemId) {
+    private BookingDto makeBooking(Long userId, Long itemId, LocalDateTime start, LocalDateTime end) {
         BookingDto bookingDto = new BookingDto();
-        bookingDto.setStart(LocalDateTime.now().plusDays(2));
-        bookingDto.setEnd(LocalDateTime.now().plusDays(3));
+        bookingDto.setStart(start);
+        bookingDto.setEnd(end);
         bookingDto.setItemId(itemId);
         bookingDto.setBooker(userId);
         return bookingDto;

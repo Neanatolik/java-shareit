@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,7 +45,6 @@ class UserControllerTest {
         userDto = new UserDto();
         userDto.setEmail("user1@mail.com");
         userDto.setName("user1");
-
 
     }
 
@@ -112,7 +112,8 @@ class UserControllerTest {
 
     @Test
     void deleteUser() throws Exception {
-        userService.deleteUser(1L);
+        Mockito.doNothing().when(userService).deleteUser(1);
+        userController.deleteUser(1);
         verify(userService, times(1))
                 .deleteUser(1L);
     }

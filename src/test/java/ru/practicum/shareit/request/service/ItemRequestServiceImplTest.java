@@ -62,7 +62,7 @@ class ItemRequestServiceImplTest {
     @Test
     @Order(2)
     void getItemRequestsByOwner() {
-        assertThrows(NotFoundException.class, () -> service.getItemRequestsByOwner(2L));
+        assertThrows(NotFoundException.class, () -> service.getItemRequestsByOwner(0L));
 
         User user = makeUser("user1", "user1@mail.com");
         User user2 = makeUser("user2", "user2@mail.com");
@@ -92,6 +92,14 @@ class ItemRequestServiceImplTest {
                     hasProperty("description", equalTo(itemRequestDto.getDescription()))
             )));
         }
+        ItemRequestDto itemRequestDto = makeItemRequestDto("itemRequestDto", user2);
+        ItemRequest itemRequest = ItemRequestMapper.fromItemRequestDto(itemRequestDto);
+        em.persist(itemRequest);
+        Item item = makeItem("itemName", "itemDescription", true, user, itemRequest.getId());
+        em.persist(item);
+        System.out.println(em.createQuery("Select i From Item i", Item.class).getResultList());
+        System.out.println(service.getItemRequestsByOwner(user2.getId()));
+
     }
 
     @Test

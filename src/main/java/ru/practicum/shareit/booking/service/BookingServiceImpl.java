@@ -124,7 +124,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private List<Booking> getListOfBookingByStateAndUserForOwner(long userId, String state, PageRequest page) {
-        List<Booking> listBooking;
+        List<Booking> listBooking = Collections.emptyList();
         switch (Status.valueOf(state)) {
             case ALL:
                 listBooking = bookingRepository.getOwnersItemAll(userId, page);
@@ -144,14 +144,12 @@ public class BookingServiceImpl implements BookingService {
             case REJECTED:
                 listBooking = bookingRepository.getBookingsByStatusAndOwnerId(userId, state);
                 break;
-            default:
-                listBooking = Collections.emptyList();
         }
         return listBooking;
     }
 
     private List<Booking> getListOfBookingByStateAndUser(long userId, String state, PageRequest page) {
-        List<Booking> listBooking;
+        List<Booking> listBooking = Collections.emptyList();
         switch (Status.valueOf(state)) {
             case ALL:
                 listBooking = bookingRepository.getBookingsItemAll(userId, page);
@@ -171,9 +169,7 @@ public class BookingServiceImpl implements BookingService {
             case REJECTED:
                 listBooking = bookingRepository.getBookingsByStatusAndUserId(userId, state);
                 break;
-            default:
-                listBooking = Collections.emptyList();
-                break;
+
         }
         return listBooking;
     }
@@ -211,9 +207,6 @@ public class BookingServiceImpl implements BookingService {
         }
         if (start.isBefore(LocalDateTime.now())) {
             throw new BadRequest("Дата старта в прошлом!");
-        }
-        if (end.isBefore(LocalDateTime.now())) {
-            throw new BadRequest("Дата окончания в прошлом!");
         }
 
     }
