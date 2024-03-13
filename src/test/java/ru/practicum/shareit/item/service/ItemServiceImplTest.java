@@ -86,7 +86,6 @@ class ItemServiceImplTest {
     void getItemsByUserId() {
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
-
         List<ItemDto> itemDtos = new java.util.ArrayList<>(List.of(
                 makeItemDto("Item1", "Item1", true),
                 makeItemDto("Item2", "Item2", true),
@@ -167,7 +166,6 @@ class ItemServiceImplTest {
                 LocalDateTime.now().minusDays(2), LocalDateTime.now().plusDays(4));
         Booking booking = BookingMapper.fromBookingDto(bookingDto, user2, item1);
         em.persist(booking);
-        System.out.println(service.searchByItemName("2", user2.getId()));
     }
 
     @Test

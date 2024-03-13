@@ -111,7 +111,7 @@ class UserControllerTest {
     }
 
     @Test
-    void deleteUser() throws Exception {
+    void deleteUser() {
         Mockito.doNothing().when(userService).deleteUser(1);
         userController.deleteUser(1);
         verify(userService, times(1))

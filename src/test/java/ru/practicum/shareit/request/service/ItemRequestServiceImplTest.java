@@ -48,9 +48,7 @@ class ItemRequestServiceImplTest {
         assertThrows(NotFoundException.class, () -> service.saveItemRequest(itemRequestDtoWrong, 1L));
         em.persist(user);
         ItemRequestDto itemRequestDto1 = makeItemRequestDto("Item Request 1", user);
-        System.out.println(em.createQuery("Select u From User u", User.class).getResultList());
         service.saveItemRequest(itemRequestDto1, user.getId());
-        System.out.println(em.createQuery("Select ir From ItemRequest ir", ItemRequest.class).getResultList());
         TypedQuery<ItemRequest> query = em.createQuery("Select ir from ItemRequest ir where ir.description = :description", ItemRequest.class);
         ItemRequest itemRequest = query.setParameter("description", itemRequestDto1.getDescription())
                 .getSingleResult();
@@ -97,8 +95,6 @@ class ItemRequestServiceImplTest {
         em.persist(itemRequest);
         Item item = makeItem("itemName", "itemDescription", true, user, itemRequest.getId());
         em.persist(item);
-        System.out.println(em.createQuery("Select i From Item i", Item.class).getResultList());
-        System.out.println(service.getItemRequestsByOwner(user2.getId()));
 
     }
 
