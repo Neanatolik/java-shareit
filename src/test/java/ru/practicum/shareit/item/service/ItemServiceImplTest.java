@@ -86,6 +86,8 @@ class ItemServiceImplTest {
     void getItemsByUserId() {
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
+        User user2 = makeUser("user2", "user2@mail.com");
+        em.persist(user);
         List<ItemDto> itemDtos = new java.util.ArrayList<>(List.of(
                 makeItemDto("Item1", "Item1", true),
                 makeItemDto("Item2", "Item2", true),
@@ -110,6 +112,18 @@ class ItemServiceImplTest {
         item1.setId(itemId);
         Comment comment = makeComment("TextComment", user, ItemMapper.fromItemDto(item1, user));
         em.persist(comment);
+        Booking booking1 = makeBooking(LocalDateTime.now(),
+                LocalDateTime.now().plusDays(2),
+                ItemMapper.fromItemDto(item1, user),
+                user,
+                Status.WAITING);
+        Booking booking2 = makeBooking(LocalDateTime.now().minusDays(2),
+                LocalDateTime.now(),
+                ItemMapper.fromItemDto(item1, user),
+                user,
+                Status.WAITING);
+        em.persist(booking1);
+        em.persist(booking2);
         targetItems = service.getItemsByUserId(user.getId());
         itemDtos.add(item1);
         assertThat(targetItems, hasSize(itemDtos.size()));
@@ -162,7 +176,7 @@ class ItemServiceImplTest {
                     hasProperty("description", equalTo(itemDto.getDescription()))
             )));
         }
-        BookingDto bookingDto = makeBooking(user2.getId(), item1.getId(),
+        BookingDto bookingDto = makeBookingDto(user2.getId(), item1.getId(),
                 LocalDateTime.now().minusDays(2), LocalDateTime.now().plusDays(4));
         Booking booking = BookingMapper.fromBookingDto(bookingDto, user2, item1);
         em.persist(booking);
@@ -180,7 +194,7 @@ class ItemServiceImplTest {
         item.setId(itemId);
         Comment commentDtoWrong = new Comment();
         assertThrows(BadRequest.class, () -> service.postComment(user.getId(), itemId, commentDtoWrong));
-        BookingDto bookingDto = makeBooking(user.getId(), itemId, LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(4));
+        BookingDto bookingDto = makeBookingDto(user.getId(), itemId, LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(4));
         bookingDto.setStatus(Status.APPROVED);
         em.persist(BookingMapper.fromBookingDto(bookingDto, user, ItemMapper.fromItemDto(item, user)));
         assertThrows(BadRequest.class, () -> service.postComment(user.getId(), itemId, commentDtoWrong));
@@ -198,7 +212,7 @@ class ItemServiceImplTest {
 
     }
 
-    private BookingDto makeBooking(Long userId, Long itemId, LocalDateTime start, LocalDateTime end) {
+    private BookingDto makeBookingDto(Long userId, Long itemId, LocalDateTime start, LocalDateTime end) {
         BookingDto bookingDto = new BookingDto();
         bookingDto.setStart(start);
         bookingDto.setEnd(end);
@@ -229,6 +243,16 @@ class ItemServiceImplTest {
         comment.setAuthor(user);
         comment.setItem(item);
         return comment;
+    }
+
+    private Booking makeBooking(LocalDateTime start, LocalDateTime end, Item item, User user, Status status) {
+        Booking b = new Booking();
+        b.setStart(start);
+        b.setEnd(end);
+        b.setItem(item);
+        b.setBooker(user);
+        b.setStatus(status);
+        return b;
     }
 
 }
