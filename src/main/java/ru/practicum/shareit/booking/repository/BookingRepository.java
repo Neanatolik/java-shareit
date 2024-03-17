@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking.repository;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,11 +13,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
 
     @Query(value = "select *\n" +
-            "from bookings b\n" +
-            "left join items i on b.item_id  = i.id\n" +
+            "from bookings as bmp\n" +
+            "inner join items i on bmp.item_id  = i.id\n" +
             "where i.owner_id  = ?1\n" +
-            "order by b.start_date desc", nativeQuery = true)
-    List<Booking> getOwnersItemAll(long userId, Pageable page);
+            "order by bmp.start_date desc",
+            countQuery = "select count(*)\n" +
+                    "from bookings as bmp\n" +
+                    "inner join items i on bmp.item_id  = i.id\n" +
+                    "where i.owner_id  = ?1",
+            nativeQuery = true)
+    Page<Booking> getOwnersItemAll(long userId, Pageable page);
 
     @Query(value = "select *\n" +
             "from bookings b\n" +
@@ -97,10 +103,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> getBookingsByItemIdDesc(long itemId, long userId);
 
     @Query(value = "select *\n" +
-            "from bookings b\n" +
-            "where b.booker_id = ?1\n" +
-            "order by b.start_date desc", nativeQuery = true)
-    List<Booking> getBookingsItemAll(long userId, Pageable page);
+            "from bookings bp\n" +
+            "where bp.booker_id = ?1\n" +
+            "order by bp.start_date desc", nativeQuery = true)
+    Page<Booking> getBookingsItemAll(long userId, Pageable page);
 
     @Query(value = "select *\n" +
             "from bookings b\n" +

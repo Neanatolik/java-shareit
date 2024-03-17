@@ -86,7 +86,7 @@ class ItemControllerTest {
 
     @Test
     void searchByItemName() throws Exception {
-        when(itemService.searchByItemName(anyString(), anyLong()))
+        when(itemService.searchByItemName(anyString(), anyLong(), anyInt(), anyInt()))
                 .thenReturn(List.of(itemDto));
         mvc.perform(get("/items/search")
                         .param("text", "item")

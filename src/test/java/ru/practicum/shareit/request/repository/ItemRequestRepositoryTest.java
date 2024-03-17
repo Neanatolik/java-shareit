@@ -71,7 +71,7 @@ class ItemRequestRepositoryTest {
         em.persist(itemRequest3);
         List<ItemRequest> sourceItemRequests = List.of(itemRequest, itemRequest2);
 
-        List<ItemRequest> targetItemRequests = repository.findAllItemRequest(user2.getId(), PageRequest.of(0, 10));
+        List<ItemRequest> targetItemRequests = repository.findAllItemRequest(user2.getId(), PageRequest.of(0, 10)).getContent();
 
         assertThat(targetItemRequests, hasSize(sourceItemRequests.size()));
 

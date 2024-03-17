@@ -28,17 +28,6 @@ public class ItemMapper {
                 item.getName());
     }
 
-    public Item fromItemDto(ItemDto itemDto, long id, User user) {
-        Item item = new Item();
-        item.setId(id);
-        item.setName(itemDto.getName());
-        item.setDescription(itemDto.getDescription());
-        item.setAvailable(itemDto.getAvailable());
-        item.setOwner(user);
-        item.setRequestId(itemDto.getRequestId());
-        return item;
-    }
-
     public Item fromItemDto(ItemDto itemDto, User user) {
         Item item = new Item();
         item.setId(itemDto.getId());
@@ -47,6 +36,16 @@ public class ItemMapper {
         item.setAvailable(itemDto.getAvailable());
         item.setOwner(user);
         item.setRequestId(itemDto.getRequestId());
+        return item;
+    }
+
+    public Item fromItemDtoPost(ItemDtoPost itemDtoPost, User user) {
+        Item item = new Item();
+        item.setName(itemDtoPost.getName());
+        item.setDescription(itemDtoPost.getDescription());
+        item.setAvailable(itemDtoPost.getAvailable());
+        item.setOwner(user);
+        item.setRequestId(itemDtoPost.getRequestId());
         return item;
     }
 }

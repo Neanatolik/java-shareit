@@ -8,9 +8,10 @@ import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
+import ru.practicum.shareit.request.dto.ItemRequestDtoPost;
 import ru.practicum.shareit.request.dto.ItemRequestMapper;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.request.repository.ItemRequestRepository;
-import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
@@ -25,20 +26,22 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     private final ItemRepository itemRepository;
 
     @Autowired
-    public ItemRequestServiceImpl(ItemRequestRepository itemRequestRepository, UserRepository userRepository, ItemRepository itemRepository) {
+    public ItemRequestServiceImpl(ItemRequestRepository itemRequestRepository,
+                                  UserRepository userRepository,
+                                  ItemRepository itemRepository) {
         this.itemRequestRepository = itemRequestRepository;
         this.userRepository = userRepository;
         this.itemRepository = itemRepository;
     }
 
     @Override
-    public ItemRequestDto saveItemRequest(ItemRequestDto itemRequestDto, Long userId) {
-        checkItemRequestDescription(itemRequestDto.getDescription());
+    public ItemRequestDto saveItemRequest(ItemRequestDtoPost itemRequestDtoPost, Long userId) {
+        checkItemRequestDescription(itemRequestDtoPost.getDescription());
         checkUser(userId);
-        User user = userRepository.findById(userId).get();
-        itemRequestDto.setRequestor(user);
-        itemRequestDto.setCreated(LocalDateTime.now());
-        return ItemRequestMapper.toItemRequestDto(itemRequestRepository.save(ItemRequestMapper.fromItemRequestDto(itemRequestDto)));
+        ItemRequest itemRequest = ItemRequestMapper.fromItemRequestDtoPost(itemRequestDtoPost,
+                userRepository.findById(userId).get(),
+                LocalDateTime.now());
+        return ItemRequestMapper.toItemRequestDto(itemRequestRepository.save(itemRequest));
     }
 
     @Override

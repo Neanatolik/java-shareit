@@ -127,7 +127,7 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> listBooking = Collections.emptyList();
         switch (Status.valueOf(state)) {
             case ALL:
-                listBooking = bookingRepository.getOwnersItemAll(userId, page);
+                listBooking = bookingRepository.getOwnersItemAll(userId, page).getContent();
                 break;
             case PAST:
                 listBooking = bookingRepository.getOwnersItemPast(userId);
@@ -152,7 +152,7 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> listBooking = Collections.emptyList();
         switch (Status.valueOf(state)) {
             case ALL:
-                listBooking = bookingRepository.getBookingsItemAll(userId, page);
+                listBooking = bookingRepository.getBookingsItemAll(userId, page).getContent();
                 break;
             case PAST:
                 listBooking = bookingRepository.getBookingsItemPast(userId);

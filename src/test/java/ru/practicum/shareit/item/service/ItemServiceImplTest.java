@@ -13,7 +13,9 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.enums.Status;
 import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
+import ru.practicum.shareit.item.dto.CommentDtoPost;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemDtoPost;
 import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
@@ -42,23 +44,23 @@ class ItemServiceImplTest {
     @Test
     @Order(1)
     void saveItem() {
-        ItemDto itemDtoWrong = new ItemDto();
-        assertThrows(BadRequest.class, () -> service.saveItem(itemDtoWrong, 1L));
-        itemDtoWrong.setAvailable(true);
-        assertThrows(BadRequest.class, () -> service.saveItem(itemDtoWrong, 1L));
-        itemDtoWrong.setName("Wrong");
-        assertThrows(BadRequest.class, () -> service.saveItem(itemDtoWrong, 1L));
-        itemDtoWrong.setDescription("Wrong");
-        assertThrows(NotFoundException.class, () -> service.saveItem(itemDtoWrong, 1L));
+        ItemDtoPost itemDtoPostWrong = new ItemDtoPost();
+        assertThrows(BadRequest.class, () -> service.saveItem(itemDtoPostWrong, 1L));
+        itemDtoPostWrong.setAvailable(true);
+        assertThrows(BadRequest.class, () -> service.saveItem(itemDtoPostWrong, 1L));
+        itemDtoPostWrong.setName("Wrong");
+        assertThrows(BadRequest.class, () -> service.saveItem(itemDtoPostWrong, 1L));
+        itemDtoPostWrong.setDescription("Wrong");
+        assertThrows(NotFoundException.class, () -> service.saveItem(itemDtoPostWrong, 1L));
         User user = makeUser("user1", "user1@mail.com");
         em.persist(user);
-        ItemDto itemDto = makeItemDto("Item", "Item", true);
-        service.saveItem(itemDto, user.getId());
+        ItemDtoPost itemDtoPost = makeItemDtoPost("Item", "Item", true);
+        service.saveItem(itemDtoPost, user.getId());
         TypedQuery<Item> query = em.createQuery("Select i from Item i where i.description = :description", Item.class);
-        Item item = query.setParameter("description", itemDto.getDescription())
+        Item item = query.setParameter("description", itemDtoPost.getDescription())
                 .getSingleResult();
         assertThat(item.getId(), notNullValue());
-        assertThat(item.getDescription(), equalTo(itemDto.getDescription()));
+        assertThat(item.getDescription(), equalTo(itemDtoPost.getDescription()));
     }
 
     @Test
@@ -71,7 +73,7 @@ class ItemServiceImplTest {
         ItemDto itemDto = makeItemDto("Item", "Item", true);
         Item item1 = ItemMapper.fromItemDto(itemDto, user);
         em.persist(item1);
-        ItemDto itemDtoChanged = makeItemDto("NewItem", "NewItem", true);
+        ItemDtoPost itemDtoChanged = makeItemDtoPost("NewItem", "NewItem", true);
         assertThrows(NotFoundException.class, () -> service.changeItem(itemDtoChanged, item1.getId(), 3L));
         service.changeItem(itemDtoChanged, item1.getId(), user.getId());
         TypedQuery<Item> query = em.createQuery("Select i from Item i where i.description = :description", Item.class);
@@ -167,8 +169,8 @@ class ItemServiceImplTest {
         em.persist(item2);
         em.persist(item3);
         em.flush();
-        assertThat(service.searchByItemName(" ", user.getId()), hasSize(0));
-        List<ItemDto> itemFromDb = service.searchByItemName("2", user.getId());
+        assertThat(service.searchByItemName(" ", user.getId(), 0, 10), hasSize(0));
+        List<ItemDto> itemFromDb = service.searchByItemName("2", user.getId(), 0, 10);
         assertThat(itemFromDb, hasSize(1));
         for (ItemDto itemDto : itemFromDb) {
             assertThat(itemFromDb, hasItem(allOf(
@@ -192,7 +194,7 @@ class ItemServiceImplTest {
         Long itemId = em.createQuery("Select id From Item i", Long.class).getSingleResult();
         user.setId(user.getId());
         item.setId(itemId);
-        Comment commentDtoWrong = new Comment();
+        CommentDtoPost commentDtoWrong = new CommentDtoPost();
         assertThrows(BadRequest.class, () -> service.postComment(user.getId(), itemId, commentDtoWrong));
         BookingDto bookingDto = makeBookingDto(user.getId(), itemId, LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(4));
         bookingDto.setStatus(Status.APPROVED);
@@ -204,12 +206,23 @@ class ItemServiceImplTest {
         assertThrows(BadRequest.class, () -> service.postComment(user.getId(), itemId, commentDtoWrong));
         bookingDto.setStart(LocalDateTime.now().minusDays(2));
         em.persist(BookingMapper.fromBookingDto(bookingDto, user, ItemMapper.fromItemDto(item, user)));
-        Comment comment = makeComment("commentText", user, ItemMapper.fromItemDto(item, user));
+        CommentDtoPost comment = makeCommentDtoPost("commentText");
         service.postComment(user.getId(), itemId, comment);
         Comment commentFromDb = em.createQuery("Select c From Comment c", Comment.class).getSingleResult();
         assertThat(commentFromDb.getId(), notNullValue());
         assertThat(commentFromDb.getText(), equalTo(comment.getText()));
+    }
 
+    private CommentDtoPost makeCommentDtoPost(String commentText) {
+        return new CommentDtoPost(commentText);
+    }
+
+    private ItemDtoPost makeItemDtoPost(String name, String description, boolean available) {
+        ItemDtoPost itemDtoPost = new ItemDtoPost();
+        itemDtoPost.setAvailable(available);
+        itemDtoPost.setName(name);
+        itemDtoPost.setDescription(description);
+        return itemDtoPost;
     }
 
     private BookingDto makeBookingDto(Long userId, Long itemId, LocalDateTime start, LocalDateTime end) {

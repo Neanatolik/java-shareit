@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
+import ru.practicum.shareit.request.dto.ItemRequestDtoPost;
 import ru.practicum.shareit.request.service.ItemRequestService;
 
 import java.util.List;
@@ -21,9 +22,10 @@ public class ItemRequestController {
     }
 
     @PostMapping
-    public ItemRequestDto saveItemRequest(@RequestHeader(user) Long userId, @RequestBody ItemRequestDto itemRequestDto) {
+    public ItemRequestDto saveItemRequest(@RequestHeader(user) Long userId,
+                                          @RequestBody ItemRequestDtoPost itemRequestDtoPost) {
         log.info("POST (user: {}) /requests", userId);
-        return itemRequestService.saveItemRequest(itemRequestDto, userId);
+        return itemRequestService.saveItemRequest(itemRequestDtoPost, userId);
     }
 
     @GetMapping
@@ -34,7 +36,7 @@ public class ItemRequestController {
 
     @GetMapping("/{itemRequestId}")
     public ItemRequestDto getItemRequestById(@RequestHeader(user) Long userId,
-                                                   @PathVariable Long itemRequestId) {
+                                             @PathVariable Long itemRequestId) {
         log.info("GET (user: {}) /requests/{}", userId, itemRequestId);
         return itemRequestService.getItemRequestsByOwnerById(userId, itemRequestId);
     }

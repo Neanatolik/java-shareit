@@ -11,6 +11,7 @@ import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
+import ru.practicum.shareit.request.dto.ItemRequestDtoPost;
 import ru.practicum.shareit.request.dto.ItemRequestMapper;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
@@ -42,12 +43,12 @@ class ItemRequestServiceImplTest {
     void saveItemRequest() {
         User user = makeUser("userDto1", "userDto1@mail.com");
 
-        ItemRequestDto itemRequestDtoWrong = new ItemRequestDto();
+        ItemRequestDtoPost itemRequestDtoWrong = new ItemRequestDtoPost();
         assertThrows(BadRequest.class, () -> service.saveItemRequest(itemRequestDtoWrong, 1L));
         itemRequestDtoWrong.setDescription("Wrong itemRequest");
         assertThrows(NotFoundException.class, () -> service.saveItemRequest(itemRequestDtoWrong, 1L));
         em.persist(user);
-        ItemRequestDto itemRequestDto1 = makeItemRequestDto("Item Request 1", user);
+        ItemRequestDtoPost itemRequestDto1 = makeItemRequestDtoPost("Item Request 1");
         service.saveItemRequest(itemRequestDto1, user.getId());
         TypedQuery<ItemRequest> query = em.createQuery("Select ir from ItemRequest ir where ir.description = :description", ItemRequest.class);
         ItemRequest itemRequest = query.setParameter("description", itemRequestDto1.getDescription())
@@ -147,6 +148,12 @@ class ItemRequestServiceImplTest {
         ItemRequestDto itemRequestDto = service.getItemRequestsByOwnerById(user.getId(), itemRequest.getId());
         assertThat(itemRequestDto.getId(), notNullValue());
         assertThat(itemRequestDto.getDescription(), equalTo(itemRequestDto1.getDescription()));
+    }
+
+    private ItemRequestDtoPost makeItemRequestDtoPost(String description) {
+        ItemRequestDtoPost itemRequestDtoPost = new ItemRequestDtoPost();
+        itemRequestDtoPost.setDescription(description);
+        return itemRequestDtoPost;
     }
 
     private ItemRequestDto makeItemRequestDto(String description, User requestor) {

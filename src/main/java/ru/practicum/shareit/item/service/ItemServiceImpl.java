@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDtoForItem;
@@ -9,10 +10,7 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.item.dto.CommentDto;
-import ru.practicum.shareit.item.dto.CommentMapper;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemMapper;
+import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
@@ -48,24 +46,25 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public ItemDto saveItem(ItemDto itemDto, long userId) {
-        checkItem(itemDto);
+    public ItemDto saveItem(ItemDtoPost itemDtoPost, long userId) {
+        checkItem(itemDtoPost);
         checkItemsUser(userId);
         User user = userRepository.getReferenceById(userId);
-        Item item = itemRepository.save(ItemMapper.fromItemDto(itemDto, user));
+        Item item = itemRepository.save(ItemMapper.fromItemDtoPost(itemDtoPost, user));
         return ItemMapper.toItemDto(item,
-                getLastBooking(ItemMapper.fromItemDto(itemDto, item.getId(), user), userId),
-                getNextBooking(ItemMapper.fromItemDto(itemDto, item.getId(), user), userId),
+                getLastBooking(item, userId),
+                getNextBooking(item, userId),
                 getCommentsByItemId(item.getId()));
     }
 
     @Override
     @Transactional
-    public ItemDto changeItem(ItemDto itemDto, long itemId, long userId) {
+    public ItemDto changeItem(ItemDtoPost itemDtoPost, long itemId, long userId) {
         checkItemsUser(userId);
         checkBelong(itemId, userId);
         User user = userRepository.getReferenceById(userId);
-        Item item = itemRepository.save(updateItem(ItemMapper.fromItemDto(itemDto, itemId, user), itemRepository.getReferenceById(itemId)));
+        Item item = itemRepository.save(updateItem(ItemMapper.fromItemDtoPost(itemDtoPost, user),
+                itemRepository.getReferenceById(itemId)));
         return ItemMapper.toItemDto(item,
                 getLastBooking(item, userId),
                 getNextBooking(item, userId),
@@ -101,11 +100,13 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> searchByItemName(String itemName, long userId) {
+    public List<ItemDto> searchByItemName(String itemName, long userId, int from, int size) {
         if (itemName.isBlank()) return Collections.emptyList();
         List<ItemDto> itemsDto = new ArrayList<>();
+        checkFromAndSize(from, size);
+        PageRequest page = PageRequest.of(from > 0 ? from / size : 0, size);
         List<Booking> bookings = bookingRepository.getBookingsByUserId(userId);
-        List<Item> items = itemRepository.search(itemName);
+        List<Item> items = itemRepository.search(itemName, page).getContent();
         List<Comment> comments = commentRepository.findAll();
         for (Item item : items) {
             List<Booking> bookingsByItem = bookings.stream()
@@ -121,15 +122,22 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public CommentDto postComment(long userId, Long itemId, Comment comment) {
+    public CommentDto postComment(long userId, Long itemId, CommentDtoPost commentDtoPost) {
         checkItemsUser(userId);
         checkAvailabilityOfBookingForUser(userId, itemId);
-        checkText(comment.getText());
+        checkText(commentDtoPost.getText());
         checkDateOfBookingForComment(userId, itemId);
-        comment.setItem(itemRepository.getReferenceById(itemId));
-        comment.setAuthor(userRepository.getReferenceById(userId));
-        comment.setCreated(LocalDateTime.now());
+        Comment comment = CommentMapper.fromCommentDtoPost(commentDtoPost,
+                itemRepository.getReferenceById(itemId),
+                userRepository.getReferenceById(userId),
+                LocalDateTime.now());
         return CommentMapper.toCommentDto(commentRepository.save(comment));
+    }
+
+    private void checkFromAndSize(int from, int size) {
+        if ((from < 0) || (size <= 0)) {
+            throw new BadRequest("Неверные значения");
+        }
     }
 
     private List<CommentDto> getCommentsByItemIdWithoutCycle(List<Comment> comments, Long itemId) {
@@ -278,7 +286,7 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
-    private void checkItem(ItemDto item) {
+    private void checkItem(ItemDtoPost item) {
         if (Objects.isNull(item.getAvailable())) {
             throw new BadRequest("Item without available");
         } else if (Objects.isNull(item.getName()) || item.getName().isBlank()) {

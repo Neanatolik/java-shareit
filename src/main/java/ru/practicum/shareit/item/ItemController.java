@@ -7,8 +7,9 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.constaints.AdvancedInfo;
 import ru.practicum.shareit.constaints.BasicInfo;
 import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.CommentDtoPost;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.model.Comment;
+import ru.practicum.shareit.item.dto.ItemDtoPost;
 import ru.practicum.shareit.item.service.ItemService;
 
 import javax.validation.Valid;
@@ -29,9 +30,9 @@ public class ItemController {
 
     @PostMapping
     @Validated(BasicInfo.class)
-    public ItemDto saveItem(@RequestBody @Valid ItemDto item, @RequestHeader(user) long userId) {
+    public ItemDto saveItem(@RequestBody @Valid ItemDtoPost itemDtoPost, @RequestHeader(user) long userId) {
         log.info("POST /items");
-        return itemService.saveItem(item, userId);
+        return itemService.saveItem(itemDtoPost, userId);
     }
 
     @GetMapping
@@ -42,9 +43,11 @@ public class ItemController {
 
     @PatchMapping("/{itemId}")
     @Validated(AdvancedInfo.class)
-    public ItemDto changeItem(@RequestBody @Valid ItemDto item, @PathVariable long itemId, @RequestHeader(user) long userId) {
+    public ItemDto changeItem(@RequestBody @Valid ItemDtoPost itemDtoPost,
+                              @PathVariable long itemId,
+                              @RequestHeader(user) long userId) {
         log.info("PATCH /items/{}", itemId);
-        return itemService.changeItem(item, itemId, userId);
+        return itemService.changeItem(itemDtoPost, itemId, userId);
     }
 
     @GetMapping("/{itemId}")
@@ -54,15 +57,18 @@ public class ItemController {
     }
 
     @GetMapping("/search")
-    public List<ItemDto> searchByItemName(@RequestParam("text") String itemName, @RequestHeader(user) long userId) {
+    public List<ItemDto> searchByItemName(@RequestParam("text") String itemName,
+                                          @RequestHeader(user) long userId,
+                                          @RequestParam(defaultValue = "0") int from,
+                                          @RequestParam(defaultValue = "10") int size) {
         log.info("GET /items");
-        return itemService.searchByItemName(itemName, userId);
+        return itemService.searchByItemName(itemName, userId, from, size);
     }
 
     @PostMapping("/{itemId}/comment")
     public CommentDto postComment(@RequestHeader(user) long userId,
                                   @PathVariable Long itemId,
-                                  @RequestBody @Valid Comment comment) {
+                                  @RequestBody @Valid CommentDtoPost comment) {
         log.info("POST /{}/comment", itemId);
         return itemService.postComment(userId, itemId, comment);
     }
