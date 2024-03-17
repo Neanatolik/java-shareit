@@ -2,6 +2,7 @@ package ru.practicum.shareit.item.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.practicum.shareit.booking.dto.BookingDtoForItem;
 import ru.practicum.shareit.constaints.AdvancedInfo;
 import ru.practicum.shareit.constaints.BasicInfo;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class ItemDto {
     @Positive(groups = AdvancedInfo.class)
     @NotNull(groups = AdvancedInfo.class)
@@ -26,4 +28,5 @@ public class ItemDto {
     private BookingDtoForItem lastBooking;
     private BookingDtoForItem nextBooking;
     private List<CommentDto> comments;
+    private Long requestId;
 }

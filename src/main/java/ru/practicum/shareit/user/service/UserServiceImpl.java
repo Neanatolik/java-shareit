@@ -70,8 +70,8 @@ public class UserServiceImpl implements UserService {
     }
 
     private void checkUser(@Valid UserDto user) {
-        if (Objects.isNull(user.getEmail()) || user.getEmail().isBlank()) {
-            throw new BadRequest("User without email");
+        if (Objects.isNull(user.getName()) || user.getName().isBlank()) {
+            throw new BadRequest("User without name");
         }
     }
 
