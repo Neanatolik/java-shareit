@@ -1,5 +1,7 @@
 package ru.practicum.shareit.item.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import ru.practicum.shareit.item.model.Item;
@@ -17,5 +19,11 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             "from items\n" +
             "where lower(description) like lower(concat('%',?1,'%'))\n" +
             "and is_available is TRUE", nativeQuery = true)
-    List<Item> search(String itemName);
+    Page<Item> search(String itemName, PageRequest page);
+
+    List<Item> findAllItemByRequestIdIsNotNull();
+
+    Item getItemByRequestId(Long itemRequestId);
+
+    List<Item> findAllItemByRequestId(Long itemRequestId);
 }

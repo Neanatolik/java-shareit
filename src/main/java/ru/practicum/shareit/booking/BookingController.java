@@ -31,9 +31,11 @@ public class BookingController {
 
     @GetMapping
     public List<BookingDtoSend> getBookingWithState(@RequestHeader(user) long userId,
-                                                    @RequestParam(name = "state", defaultValue = "ALL") String state) {
-        log.info("GET (user: {}) /bookings?state={}", userId, state);
-        return bookingService.getBookingWithState(userId, state);
+                                                    @RequestParam(name = "state", defaultValue = "ALL") String state,
+                                                    @RequestParam(defaultValue = "0") int from,
+                                                    @RequestParam(defaultValue = "10") int size) {
+        log.info("GET (user: {}) /bookings?state={}&from={}&size={}", userId, state, from, size);
+        return bookingService.getBookingWithState(userId, state, from, size);
     }
 
     @PatchMapping("/{bookingId}")
@@ -52,9 +54,11 @@ public class BookingController {
 
     @GetMapping("/owner")
     public List<BookingDtoSend> getOwnersItem(@RequestHeader(user) long userId,
-                                              @RequestParam(name = "state", defaultValue = "ALL") String state) {
-        log.info("GET (user: {}) /owner?state={}", userId, state);
-        return bookingService.getOwnersItem(userId, state);
+                                              @RequestParam(name = "state", defaultValue = "ALL") String state,
+                                              @RequestParam(defaultValue = "0") int from,
+                                              @RequestParam(defaultValue = "10") int size) {
+        log.info("GET (user: {}) /owner?state={}&from={}&size={}", userId, state, from, size);
+        return bookingService.getOwnersItem(userId, state, from, size);
     }
 
 }
