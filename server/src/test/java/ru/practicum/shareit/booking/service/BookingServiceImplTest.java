@@ -10,7 +10,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.enums.Status;
 import ru.practicum.shareit.exceptions.BadRequest;
 import ru.practicum.shareit.exceptions.NotFoundException;
@@ -98,7 +97,7 @@ class BookingServiceImplTest {
                 LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2));
         Booking booking = BookingMapper.fromBookingDto(bookingDto, user2, item);
         em.persist(booking);
-        service.getBookingWithoutState(booking.getId(),  user.getId());
+        service.getBookingWithoutState(booking.getId(), user.getId());
 
     }
 
