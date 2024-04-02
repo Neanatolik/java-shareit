@@ -3,8 +3,6 @@ package ru.practicum.shareit.item.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.constaints.AdvancedInfo;
-import ru.practicum.shareit.constaints.BasicInfo;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -13,11 +11,13 @@ import javax.validation.constraints.NotNull;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ItemDtoPost {
-    @NotBlank(groups = {BasicInfo.class, AdvancedInfo.class})
+    @NotNull
+    @NotBlank
     private String name;
-    @NotBlank(groups = {BasicInfo.class, AdvancedInfo.class})
+    @NotBlank
+    @NotNull
     private String description;
-    @NotNull(groups = {BasicInfo.class, AdvancedInfo.class})
+    @NotNull
     private Boolean available;
     private Long requestId;
 }

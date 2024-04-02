@@ -23,18 +23,8 @@ public class ItemRequestMapper {
         return ItemRequestDto.builder()
                 .id(itemRequest.getId())
                 .description(itemRequest.getDescription())
-                .requestor(itemRequest.getRequestor())
                 .created(itemRequest.getCreated())
                 .build();
-    }
-
-    public ItemRequest fromItemRequestDto(ItemRequestDto itemRequestDto) {
-        ItemRequest itemRequest = new ItemRequest();
-        itemRequest.setId(itemRequestDto.getId());
-        itemRequest.setDescription(itemRequestDto.getDescription());
-        itemRequest.setRequestor(itemRequestDto.getRequestor());
-        itemRequest.setCreated(itemRequestDto.getCreated());
-        return itemRequest;
     }
 
     public List<ItemRequestDto> mapToItemRequestDto(Iterable<ItemRequest> itemRequests) {

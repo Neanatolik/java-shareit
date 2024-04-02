@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -81,7 +80,6 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingDtoSend> getBookingWithState(long userId, String state, int from, int size) {
         checkUser(userId);
         checkState(state);
-        checkFromAndSize(from, size);
         PageRequest page = PageRequest.of(from > 0 ? from / size : 0, size);
         List<Booking> listBooking = getListOfBookingByStateAndUser(userId, state, page);
         List<BookingDtoSend> listBookingDtoSend = new LinkedList<>();
@@ -95,7 +93,6 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingDtoSend> getOwnersItem(long ownerId, String state, int from, int size) {
         checkUser(ownerId);
         checkState(state);
-        checkFromAndSize(from, size);
         PageRequest page = PageRequest.of(from > 0 ? from / size : 0, size);
         List<Booking> listBooking = getListOfBookingByStateAndUserForOwner(ownerId, state, page);
         List<BookingDtoSend> listBookingDtoSend = new LinkedList<>();
@@ -103,12 +100,6 @@ public class BookingServiceImpl implements BookingService {
             listBookingDtoSend.add(BookingMapper.toBookingDtoSend(b));
         }
         return listBookingDtoSend;
-    }
-
-    private void checkFromAndSize(int from, int size) {
-        if ((from < 0) || (size <= 0)) {
-            throw new BadRequest("Неверные значения");
-        }
     }
 
     private void checkOwning(long bookingId, long userId) {
@@ -196,19 +187,9 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void checkDate(LocalDateTime start, LocalDateTime end) {
-        if (Objects.isNull(start)) {
-            throw new BadRequest("Отсутствует дата старта!");
-        }
-        if (Objects.isNull(end)) {
-            throw new BadRequest("Отсутствует дата окончания!");
-        }
         if (!start.isBefore(end)) {
             throw new BadRequest("Дата окончания предшествует дате начала!");
         }
-        if (start.isBefore(LocalDateTime.now())) {
-            throw new BadRequest("Дата старта в прошлом!");
-        }
-
     }
 
     private void checkItemAvailable(Long itemId) {

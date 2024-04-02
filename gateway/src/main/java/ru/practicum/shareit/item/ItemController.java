@@ -5,16 +5,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.constaints.AdvancedInfo;
-import ru.practicum.shareit.constaints.BasicInfo;
 import ru.practicum.shareit.item.dto.CommentDtoPost;
 import ru.practicum.shareit.item.dto.ItemDtoPost;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 
 @RestController
 @RequestMapping("/items")
 @Slf4j
+@Validated
 public class ItemController {
 
     private final ItemClient itemClient;
@@ -26,38 +27,31 @@ public class ItemController {
     }
 
     @PostMapping
-    @Validated(BasicInfo.class)
-    public ResponseEntity<Object> saveItem(@RequestBody @Valid ItemDtoPost itemDtoPost, @RequestHeader(user) long userId) {
+    public ResponseEntity<Object> saveItem(@RequestBody @Valid ItemDtoPost itemDtoPost, @Positive @RequestHeader(user) long userId) {
         log.info("POST /items");
         return itemClient.saveItem(itemDtoPost, userId);
     }
 
     @GetMapping
-    public ResponseEntity<Object> getItemsByUserId(@RequestHeader(user) long userId) {
+    public ResponseEntity<Object> getItemsByUserId(@Positive @RequestHeader(user) long userId) {
         log.info("GET (user: {}) /items", userId);
         return itemClient.getItemsByUserId(userId);
     }
 
     @PatchMapping("/{itemId}")
-    @Validated(AdvancedInfo.class)
-    public ResponseEntity<Object> changeItem(@RequestBody @Valid ItemDtoPost itemDtoPost,
-                                             @PathVariable long itemId,
-                                             @RequestHeader(user) long userId) {
+    public ResponseEntity<Object> changeItem(@RequestBody ItemDtoPost itemDtoPost, @Positive @PathVariable long itemId, @Positive @RequestHeader(user) long userId) {
         log.info("PATCH /items/{}", itemId);
         return itemClient.changeItem(itemDtoPost, itemId, userId);
     }
 
     @GetMapping("/{itemId}")
-    public ResponseEntity<Object> getItemByItemAndUserId(@PathVariable Long itemId, @RequestHeader(user) long userId) {
+    public ResponseEntity<Object> getItemByItemAndUserId(@Positive @PathVariable Long itemId, @Positive @RequestHeader(user) long userId) {
         log.info("GET /items/{}", itemId);
         return itemClient.getItemByItemAndUserId(itemId, userId);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Object> searchByItemName(@RequestParam("text") String text,
-                                                   @RequestHeader(user) long userId,
-                                                   @RequestParam(defaultValue = "0") int from,
-                                                   @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<Object> searchByItemName(@RequestParam("text") String text, @Positive @RequestHeader(user) long userId, @PositiveOrZero @RequestParam(defaultValue = "0") int from, @Positive @RequestParam(defaultValue = "10") int size) {
         log.info("GET /items/search?text={}", text);
         return itemClient.searchByItemName(text, userId, from, size);
     }

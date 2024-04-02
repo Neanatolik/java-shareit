@@ -3,9 +3,9 @@ package ru.practicum.shareit.booking.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.constaints.AdvancedInfo;
-import ru.practicum.shareit.constaints.BasicInfo;
 
+import javax.validation.constraints.Future;
+import javax.validation.constraints.FutureOrPresent;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import java.time.LocalDateTime;
@@ -14,11 +14,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BookingDto {
-    @NotNull(groups = {BasicInfo.class, AdvancedInfo.class})
+    @NotNull
+    @FutureOrPresent
     private LocalDateTime start;
-    @NotNull(groups = {BasicInfo.class, AdvancedInfo.class})
+    @NotNull
+    @Future
     private LocalDateTime end;
-    @Positive(groups = {BasicInfo.class, AdvancedInfo.class})
-    @NotNull(groups = {BasicInfo.class, AdvancedInfo.class})
+    @Positive
+    @NotNull
     private Long itemId;
 }

@@ -22,6 +22,15 @@ public class ItemMapper {
                 item.getRequestId());
     }
 
+    public ItemDtoPostForRequest toItemDtoPostForRequest(Item item) {
+        return new ItemDtoPostForRequest(
+                item.getId(),
+                item.getName(),
+                item.getDescription(),
+                item.getAvailable(),
+                item.getRequestId());
+    }
+
     public ItemDtoForBooking toItemDtoForBooking(Item item) {
         return new ItemDtoForBooking(
                 item.getId(),

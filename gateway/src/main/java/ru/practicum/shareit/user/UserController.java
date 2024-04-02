@@ -5,15 +5,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.constaints.BasicInfo;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Positive;
 
 
 @RestController
 @RequestMapping(path = "/users")
 @Slf4j
+@Validated
 public class UserController {
 
     private final UserClient userClient;
@@ -24,7 +25,6 @@ public class UserController {
     }
 
     @PostMapping
-    @Validated(BasicInfo.class)
     public ResponseEntity<Object> saveUser(@RequestBody @Valid UserDto user) {
         log.info("POST /users");
         return userClient.saveUser(user);
@@ -32,14 +32,13 @@ public class UserController {
 
 
     @PatchMapping("/{id}")
-    @Validated(BasicInfo.class)
-    public ResponseEntity<Object> changeUser(@RequestBody @Valid UserDto user, @PathVariable long id) {
+    public ResponseEntity<Object> changeUser(@RequestBody UserDto user, @Positive @PathVariable long id) {
         log.info("PATCH /users/{}", id);
         return userClient.changeUser(user, id);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Object> getUser(@PathVariable long id) {
+    public ResponseEntity<Object> getUser(@Positive @PathVariable long id) {
         log.info("GET /users/{}", id);
         return userClient.getUser(id);
     }
@@ -51,7 +50,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable long id) {
+    public void deleteUser(@Positive @PathVariable long id) {
         log.info("DELETE /users/{}", id);
         userClient.deleteUser(id);
     }

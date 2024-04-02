@@ -29,8 +29,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDto saveUser(@Valid UserDto user) {
-        checkEmail(user.getEmail());
-        checkUser(user);
         return UserMapper.toUserDto(userRepository.save(UserMapper.fromUserDto(user)));
     }
 
@@ -67,12 +65,6 @@ public class UserServiceImpl implements UserService {
         if (Objects.isNull(userNew.getEmail())) userNew.setEmail(userOld.getEmail());
         if (Objects.isNull(userNew.getName())) userNew.setName(userOld.getName());
         return userNew;
-    }
-
-    private void checkUser(@Valid UserDto user) {
-        if (Objects.isNull(user.getName()) || user.getName().isBlank()) {
-            throw new BadRequest("User without name");
-        }
     }
 
     private void checkEmail(String email) {

@@ -47,7 +47,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public ItemDto saveItem(ItemDtoPost itemDtoPost, long userId) {
-        checkItem(itemDtoPost);
         checkItemsUser(userId);
         User user = userRepository.getReferenceById(userId);
         Item item = itemRepository.save(ItemMapper.fromItemDtoPost(itemDtoPost, user));
@@ -103,7 +102,6 @@ public class ItemServiceImpl implements ItemService {
     public List<ItemDto> searchByItemName(String itemName, long userId, int from, int size) {
         if (itemName.isBlank()) return Collections.emptyList();
         List<ItemDto> itemsDto = new ArrayList<>();
-        checkFromAndSize(from, size);
         PageRequest page = PageRequest.of(from > 0 ? from / size : 0, size);
         List<Booking> bookings = bookingRepository.getBookingsByUserId(userId);
         List<Item> items = itemRepository.search(itemName, page).getContent();
@@ -125,19 +123,12 @@ public class ItemServiceImpl implements ItemService {
     public CommentDto postComment(long userId, Long itemId, CommentDtoPost commentDtoPost) {
         checkItemsUser(userId);
         checkAvailabilityOfBookingForUser(userId, itemId);
-        checkText(commentDtoPost.getText());
         checkDateOfBookingForComment(userId, itemId);
         Comment comment = CommentMapper.fromCommentDtoPost(commentDtoPost,
                 itemRepository.getReferenceById(itemId),
                 userRepository.getReferenceById(userId),
                 LocalDateTime.now());
         return CommentMapper.toCommentDto(commentRepository.save(comment));
-    }
-
-    private void checkFromAndSize(int from, int size) {
-        if ((from < 0) || (size <= 0)) {
-            throw new BadRequest("Неверные значения");
-        }
     }
 
     private List<CommentDto> getCommentsByItemIdWithoutCycle(List<Comment> comments, Long itemId) {
@@ -165,15 +156,6 @@ public class ItemServiceImpl implements ItemService {
     private void checkDateOfBookingForComment(long userId, Long itemId) {
         if (bookingRepository.getBookingsByStatusAndUserAndItemAndTime(userId, itemId).isEmpty()) {
             throw new BadRequest("Ещё не время!");
-        }
-    }
-
-    private void checkText(String text) {
-        if (Objects.isNull(text)) {
-            throw new BadRequest("Текст не предоставлен");
-        }
-        if (text.isBlank() || text.isEmpty()) {
-            throw new BadRequest("Текст пустой");
         }
     }
 
@@ -283,16 +265,6 @@ public class ItemServiceImpl implements ItemService {
     private void checkItemsUser(long userId) {
         if (!userRepository.existUserId(userId)) {
             throw new NotFoundException(String.format("User %d doesn't exist", userId));
-        }
-    }
-
-    private void checkItem(ItemDtoPost item) {
-        if (Objects.isNull(item.getAvailable())) {
-            throw new BadRequest("Item without available");
-        } else if (Objects.isNull(item.getName()) || item.getName().isBlank()) {
-            throw new BadRequest("Item without name");
-        } else if (Objects.isNull(item.getDescription()) || item.getDescription().isBlank()) {
-            throw new BadRequest("Item without description");
         }
     }
 
